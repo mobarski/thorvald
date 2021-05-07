@@ -339,12 +339,12 @@ func main() {
 	flag.StringVar(&cfg.output_path, "o",   "", "output path template, %d will be replaced with partition number")
 	flag.StringVar(&cfg.output_fmt,  "fmt", "aname,bname,c", "output format")
 	
-	flag.IntVar(&cfg.buf_cap,    "buf",     10, "line buffer capacity in MB")
-	flag.IntVar(&cfg.item_col,   "colitem",  1, "1-based column number of item name")
-	flag.IntVar(&cfg.users_col,  "colusers", 2, "1-based column number of users names")
-	flag.IntVar(&cfg.workers,    "wrk",      1, "number of workers")
-	flag.IntVar(&cfg.workers,    "cmin",     1, "minimum number of common users to show in output")
-	flag.IntVar(&cfg.sketch_cap, "k",        0, "KMV sketch capacity, zero for no KMV usage")
+	flag.IntVar(&cfg.buf_cap,    "buf",   10, "line buffer capacity in MB")
+	flag.IntVar(&cfg.item_col,   "coli",   1, "1-based column number of item name")
+	flag.IntVar(&cfg.users_col,  "colu",   2, "1-based column number of users names")
+	flag.IntVar(&cfg.workers,    "cmin",   1, "minimum number of common users to show in output")
+	flag.IntVar(&cfg.workers,    "w",      1, "number of workers")
+	flag.IntVar(&cfg.sketch_cap, "k",      0, "KMV sketch capacity, zero for no KMV usage")
 	
 	flag.Usage = func() {
 		fmt.Printf("Usage of this program:\n")
