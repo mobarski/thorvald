@@ -54,14 +54,14 @@ TODO
 | -----------: | ---- | 
 |        **i** | input path |
 |        **o** | output path, %d will be replaced with partition number |
-|      **fmt** | output format, (default: aname,bname,c) |
+|        **f** | output format, (default: aname,bname,c) |
+|        **w** | number of workers (default: 1) |
+|       **ih** | input has header (TODO) |
+|       **oh** | include header in output (TODO) |
 |      **buf** | line buffer capacity in MB (default: 10) |
 |     **coli** | column number of item name (1-based) (default: 1) |
 |     **colu** | column number of users names (1-based) (default: 2) |
-|        **w** | number of workers (default: 1) |
 |     **cmin** | minimum number of common users to show in output (default: 1) |
-|       **ih** | input has header (TODO) |
-|       **oh** | include header in output (TODO) |
 
 ## Output format
 

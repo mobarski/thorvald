@@ -326,8 +326,8 @@ func core(cfg *Cfg) {
 	// runtime.GC()
 	// debug.FreeOSMemory()
 
-	press_enter("\npress ENTER to finish") // XXX
-	fmt.Println(items[:10]) // XXX
+	//press_enter("\npress ENTER to finish") // XXX
+	//fmt.Println(items[:10]) // XXX
 	//fmt.Println(common[:10]) // XXX
 
 }
@@ -337,7 +337,7 @@ func main() {
 	
 	flag.StringVar(&cfg.input_path,  "i",   "", "input path")
 	flag.StringVar(&cfg.output_path, "o",   "", "output path template, %d will be replaced with partition number")
-	flag.StringVar(&cfg.output_fmt,  "fmt", "aname,bname,c", "output format")
+	flag.StringVar(&cfg.output_fmt,  "f",   "aname,bname,c", "output format")
 	
 	flag.IntVar(&cfg.buf_cap,    "buf",   10, "line buffer capacity in MB")
 	flag.IntVar(&cfg.item_col,   "coli",   1, "1-based column number of item name")
