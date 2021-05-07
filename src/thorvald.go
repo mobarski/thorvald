@@ -259,6 +259,7 @@ func core(cfg *Cfg) {
 				cos      := float64(c) / math.Sqrt(float64(a*b))
 				jaccard  := float64(c) / float64(a+b-c)
 				dice     := float64(2*c) / float64(a+b)
+				logdice  := 14.0 + math.Log2(dice)
 				overlap  := float64(c) / float64(min(a,b))
 				lift     := float64(c) / float64(a*b) * float64(all_users_cnt)
 				pmi      := math.Log(lift)
@@ -294,6 +295,7 @@ func core(cfg *Cfg) {
 						case "npmi"      : fmt.Fprintf(w, "%f", npmi)
 						case "anpmi"     : fmt.Fprintf(w, "%f", anpmi)
 						case "tanimoto"  : fmt.Fprintf(w, "%f", tanimoto)
+						case "logdice"   : fmt.Fprintf(w, "%f", logdice)
 					}
 					if k==len(output_fmt)-1 {
 						fmt.Fprint(w,"\n")

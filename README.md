@@ -78,6 +78,7 @@ TODO
 |      **dice** | Soersen-Dice index |
 |   **jaccard** | Jaccard index |
 |      **lift** | lift |
+|   **logdice** | logDice score |
 |      **npmi** | NPMI - Normalized Pointwise Mutual Information |
 |   **overlap** | overlap |
 | **partition** | partition/worker ID  |
