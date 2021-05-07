@@ -1,5 +1,6 @@
 # thorvald
 Similarity calculation engine for item-based collaborative filtering on unary data.
+Named after Thorvald Sørensen.
 
 **WARNING** - this is pre-alpha version.
 
@@ -75,7 +76,7 @@ TODO
 |        **ci** | result index in 1d array -> ai*num_items + bi |
 |       **cos** | cosine similarity |
 |      **craw** | raw number of elements in intersection of sketch A and B |
-|      **dice** | Soersen-Dice index |
+|      **dice** | Sørensen–Dice index |
 |   **jaccard** | Jaccard index |
 |      **lift** | lift |
 |   **logdice** | logDice score |

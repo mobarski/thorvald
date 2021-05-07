@@ -116,21 +116,19 @@ type Cfg struct {
 	users_col   int
 	output_fmt  string
 	workers     int
-	top         int // NOT USED
 	c_min       int
 }
 
 func core(cfg *Cfg) {
 	buf_cap     := cfg.buf_cap * 1024*1024
 	sketch_cap  := cfg.sketch_cap
-	input_path  := "../data/v1-big.tsv" // TODO
-	output_path := "../output/big-cap-1000.p%d.tsv" // TODO
+	input_path  := cfg.input_path
+	output_path := cfg.output_path
 	item_col    := cfg.item_col-1
 	users_col   := cfg.users_col-1
-	output_fmt  := []string{"aname","bname","c"} // TODO
+	output_fmt  := strings.Split(cfg.output_fmt, ",")
 	workers     := cfg.workers // TODO jezeli=0 to tyle ile cpu
 	c_min       := cfg.c_min
-	//top         := cfg.top
 	
 	// --- SET / KMV SKETCH CONSTRUCTION --------------------------------------
 	
@@ -148,9 +146,9 @@ func core(cfg *Cfg) {
 	range_by_item := make(map[string]int)
 	all_users := make(map[uint32]bool)
 	
-	fo,err := os.Create("sketch.estimation.tsv") // TODO: co z tym plikiem ???
-	check(err)
-	w := bufio.NewWriter(fo)
+	//fo,err := os.Create("sketch.estimation.tsv") // TODO: co z tym plikiem ???
+	//check(err)
+	//w := bufio.NewWriter(fo)
 	
 	bar := Bar(0,"LOAD","items")
 	for scanner.Scan() {
@@ -186,8 +184,8 @@ func core(cfg *Cfg) {
 		
 		bar.Add(1)
 	}
-	w.Flush()
-	fo.Close()
+	//w.Flush()
+	//fo.Close()
 	file.Close()
 	bar.Close()
 
@@ -197,8 +195,8 @@ func core(cfg *Cfg) {
 	
 	// --- INTERSECTION -------------------------------------------------------
 	
-	//items_cnt := len(users_by_item)
-	items_cnt := 100 // XXX
+	items_cnt := len(users_by_item)
+	//items_cnt := 100 // XXX
 	items := make([]string, 0, items_cnt)
 	for name := range users_by_item {
 		items = append(items, name)
@@ -328,11 +326,10 @@ func core(cfg *Cfg) {
 	// runtime.GC()
 	// debug.FreeOSMemory()
 
-	press_enter("\npress ENTER to finish")
-	
-	fmt.Println(items[:10])
-	//fmt.Println(common[:10])
-	
+	press_enter("\npress ENTER to finish") // XXX
+	fmt.Println(items[:10]) // XXX
+	//fmt.Println(common[:10]) // XXX
+
 }
 
 func main() {
@@ -342,16 +339,16 @@ func main() {
 	flag.StringVar(&cfg.output_path, "o",   "", "output path template, %d will be replaced with partition number")
 	flag.StringVar(&cfg.output_fmt,  "fmt", "aname,bname,c", "output format")
 	
-	flag.IntVar(&cfg.buf_cap,   "buf",     10, "line buffer capacity in MB")
-	flag.IntVar(&cfg.item_col,  "colitem",  1, "1-based column number of item name")
-	flag.IntVar(&cfg.users_col, "colusers", 2, "1-based column number of users names")
-	flag.IntVar(&cfg.workers,   "wrk",      1, "number of workers")
-	//flag.IntVar(&cfg.workers,   "top",    100, "limit output to top N similarities") // TODO ktora metryka - pierwsza, ostatnia, parametr ???
-	flag.IntVar(&cfg.workers,   "cmin",     1, "minimum number of common users to show in output")
+	flag.IntVar(&cfg.buf_cap,    "buf",     10, "line buffer capacity in MB")
+	flag.IntVar(&cfg.item_col,   "colitem",  1, "1-based column number of item name")
+	flag.IntVar(&cfg.users_col,  "colusers", 2, "1-based column number of users names")
+	flag.IntVar(&cfg.workers,    "wrk",      1, "number of workers")
+	flag.IntVar(&cfg.workers,    "cmin",     1, "minimum number of common users to show in output")
+	flag.IntVar(&cfg.sketch_cap, "k",        0, "KMV sketch capacity, zero for no KMV usage")
 	
 	flag.Usage = func() {
 		fmt.Printf("Usage of this program:\n")
-		fmt.Printf("./TODO TODO TODO\n")
+		fmt.Printf("./thorvald -i input.tsv -o output.tsv\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
