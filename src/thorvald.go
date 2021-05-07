@@ -1,3 +1,6 @@
+// Copyright (c) 2021 Maciej Obarski
+// Licensed under GNU General Public License v3.0
+
 // v4 -> parametry CLI
 // v4 -> output format
 // v4 -> item zamiast movie
