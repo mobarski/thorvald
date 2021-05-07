@@ -35,7 +35,7 @@ i4	i4	5
 
 ## Invocation
 
-```./thorvald -i input.tsv -o output-%d.tsv -wrk 2```
+```./thorvald -i input.tsv -o output.tsv -w 2```
 
 ## Performance
 
@@ -53,7 +53,7 @@ TODO
 |       option | info |
 | -----------: | ---- | 
 |        **i** | input path |
-|        **o** | output path, %d will be replaced with partition number |
+|        **o** | output path prefix (TODO: partitions) |
 |        **f** | output format, (default: aname,bname,c) |
 |        **w** | number of workers (default: 1) |
 |       **ih** | input has header (TODO) |
