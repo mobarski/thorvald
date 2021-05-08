@@ -117,6 +117,9 @@ type Cfg struct {
 	output_fmt  string
 	workers     int
 	c_min       int
+	header_in   bool
+	header_out  bool
+	header_part bool
 }
 
 func core(cfg *Cfg) {
@@ -129,6 +132,9 @@ func core(cfg *Cfg) {
 	output_fmt  := strings.Split(cfg.output_fmt, ",")
 	workers     := cfg.workers // TODO jezeli=0 to tyle ile cpu
 	c_min       := cfg.c_min
+	header_in   := cfg.header_in
+	header_out  := cfg.header_out
+	header_part := cfg.header_part
 	
 	// --- SET / KMV SKETCH CONSTRUCTION --------------------------------------
 	
@@ -140,7 +146,9 @@ func core(cfg *Cfg) {
 	scanner := bufio.NewScanner(file)
 	scanner.Buffer(buf, buf_cap)
 	scanner.Split(bufio.ScanLines)
-	scanner.Scan() // header
+	if header_in {
+		scanner.Scan()
+	}
 	
 	users_by_item := make(map[string]map[uint32]bool)
 	range_by_item := make(map[string]int)
@@ -338,6 +346,10 @@ func main() {
 	flag.StringVar(&cfg.input_path,  "i",   "", "input path")
 	flag.StringVar(&cfg.output_path, "o",   "", "output path template, %d will be replaced with partition number")
 	flag.StringVar(&cfg.output_fmt,  "f",   "aname,bname,c", "output format")
+	
+	flag.BoolVar(&cfg.header_in,   "ih", false, "input header")
+	flag.BoolVar(&cfg.header_out,  "oh", false, "output header")
+	flag.BoolVar(&cfg.header_part, "ph", false, "partition header")
 	
 	flag.IntVar(&cfg.buf_cap,    "buf",   10, "line buffer capacity in MB")
 	flag.IntVar(&cfg.item_col,   "coli",   1, "1-based column number of item name")

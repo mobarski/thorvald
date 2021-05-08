@@ -1,4 +1,4 @@
-# thorvald
+# Thorvald
 Similarity calculation engine for item-based collaborative filtering on unary data.
 Named after Thorvald Sørensen.
 
@@ -18,6 +18,10 @@ i3	u2,u4,u6,u8
 i4	u1,u2,u3,u7,u8
 ```
 
+## Invocation
+
+```./thorvald -i input.tsv -o output.tsv -ih -oh```
+
 ## Example output file
 
 ```
@@ -33,20 +37,17 @@ i3	i4	2
 i4	i4	5
 ```
 
-## Invocation
-
-```./thorvald -i input.tsv -o output.tsv -w 2```
-
 ## Performance
 
 TODO
 
 ## Features
 
-TODO
-
-- KMV sketch based acceleration
+- multilpe similarity metrics
 - parallel processing
+- KMV sketch based acceleration
+
+TODO
 
 # CLI options
 
@@ -56,8 +57,9 @@ TODO
 |        **o** | output path prefix (TODO: partitions) |
 |        **f** | output format, (default: aname,bname,c) |
 |        **w** | number of workers (default: 1) |
-|       **ih** | input has header (TODO) |
+|       **ih** | input has header |
 |       **oh** | include header in output (TODO) |
+|       **ph** | include header in each partition (TODO) |
 |      **buf** | line buffer capacity in MB (default: 10) |
 |     **coli** | column number of item name (1-based) (default: 1) |
 |     **colu** | column number of users names (1-based) (default: 2) |
@@ -67,25 +69,25 @@ TODO
 
 |        option | info |
 | ------------: | ---- |
-|         **a** | number of users of item A |
-|        **ai** | index of item A |
 |     **aname** | name of item A |
-|     **anpmi** | absolute NPMI |
-|         **b** | number of users of item B |
+|     **bname** | name of item B |
+|        **ai** | index of item A |
 |        **bi** | index of item B |
-|     **bname** | name of the |
-|         **c** | number of users common to item A and item B |
 |        **ci** | result index in 1d array -> ai*num_items + bi |
-|       **cos** | cosine similarity |
-|      **craw** | raw number of elements in intersection of sketch A and B |
-|      **dice** | Sørensen–Dice index |
-|   **jaccard** | Jaccard index |
-|      **lift** | lift |
-|   **logdice** | logDice score |
-|      **npmi** | NPMI - Normalized Pointwise Mutual Information |
-|   **overlap** | overlap |
 | **partition** | partition/worker ID  |
+|         **a** | number of users of item A |
+|         **b** | number of users of item B |
+|         **c** | number of users common to item A and item B |
+|      **craw** | raw number of elements in intersection of sketch A and B |
+|       **cos** | cosine similarity |
+|      **dice** | Sørensen–Dice index |
+|   **logdice** | logDice score |
+|   **jaccard** | Jaccard index |
+|   **overlap** | overlap |
+|      **lift** | lift |
 |       **pmi** | PMI - Pointwise Mutual Information |
+|      **npmi** | NPMI - Normalized Pointwise Mutual Information |
+|     **anpmi** | absolute NPMI |
 |  **tanimoto** | Tanimoto index |
 
 # Planed features
