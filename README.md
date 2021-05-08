@@ -43,7 +43,7 @@ TODO
 
 ## Features
 
-- multilpe similarity metrics
+- multiple similarity metrics: cos, npmi, logdice, jaccard and more
 - parallel processing
 - KMV sketch based acceleration
 
@@ -78,6 +78,8 @@ TODO
 |         **a** | number of users of item A |
 |         **b** | number of users of item B |
 |         **c** | number of users common to item A and item B |
+|      **araw** | raw number of elements in sketch A (TODO) |
+|      **braw** | raw number of elements in sketch B (TODO) |
 |      **craw** | raw number of elements in intersection of sketch A and B |
 |       **cos** | cosine similarity |
 |      **dice** | Sørensen–Dice index |
