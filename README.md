@@ -26,15 +26,11 @@ i4	u1,u2,u3,u7,u8
 
 ```
 aname	bname	c
-i1	i1	6
 i1	i2	3
 i1	i3	3
 i1	i4	3
-i2	i2	5
 i2	i4	3
-i3	i3	4
 i3	i4	2
-i4	i4	5
 ```
 
 ## Performance
