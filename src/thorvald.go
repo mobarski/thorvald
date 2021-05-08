@@ -120,6 +120,8 @@ type Cfg struct {
 	header_in   bool
 	header_out  bool
 	header_part bool
+	diagonal    bool
+	full        bool
 }
 
 func core(cfg *Cfg) {
@@ -135,6 +137,8 @@ func core(cfg *Cfg) {
 	header_in   := cfg.header_in
 	header_out  := cfg.header_out
 	header_part := cfg.header_part
+	diagonal    := cfg.diagonal
+	full        := cfg.full
 	
 	// --- SET / KMV SKETCH CONSTRUCTION --------------------------------------
 	
@@ -215,10 +219,18 @@ func core(cfg *Cfg) {
 	bar = Bar(items_cnt,"CALC","items")
 	var wg sync.WaitGroup
 	f := func(i0,ii int) {
-		filename := fmt.Sprintf(output_path,i0)
+		filename := output_path
+		if workers>=2 {
+			filename += fmt.Sprintf(".p%d",i0+1)
+		}
 		fo,err := os.Create(filename)
 		check(err)
 		w := bufio.NewWriter(fo)
+		//
+		if header_part || header_out && i0==0 {
+			header := strings.Join(output_fmt,"\t")
+			fmt.Fprintf(w, "%s\n", header)
+		}
 		//
 		for i:=i0; i<items_cnt; i+=ii {
 			mi := items[i]
@@ -271,10 +283,12 @@ func core(cfg *Cfg) {
 				pmi      := math.Log(lift)
 				npmi     := pmi / -math.Log(float64(c) / float64(all_users_cnt))
 				anpmi    := math.Abs(npmi)
-				tanimoto := float64(c) / (float64(a*a) + float64(b*b) - float64(c))
 
 				// --- OUTPUT ---
 				if c < c_min {
+					continue
+				}
+				if j==i && !(diagonal || full) {
 					continue
 				}
 				// TODO: limitowanie outputu na podstawie jakiejs metryki -> overlap? abs(npmi)?
@@ -300,7 +314,6 @@ func core(cfg *Cfg) {
 						case "pmi"       : fmt.Fprintf(w, "%f", pmi)
 						case "npmi"      : fmt.Fprintf(w, "%f", npmi)
 						case "anpmi"     : fmt.Fprintf(w, "%f", anpmi)
-						case "tanimoto"  : fmt.Fprintf(w, "%f", tanimoto)
 						case "logdice"   : fmt.Fprintf(w, "%f", logdice)
 					}
 					if k==len(output_fmt)-1 {
@@ -351,10 +364,13 @@ func main() {
 	flag.BoolVar(&cfg.header_out,  "oh", false, "output header")
 	flag.BoolVar(&cfg.header_part, "ph", false, "partition header")
 	
+	flag.BoolVar(&cfg.diagonal,  "diag", false, "include diagonal in output")
+	flag.BoolVar(&cfg.full,      "full", false, "full output (including diagonal and lower triangle) (TODO)")
+	
 	flag.IntVar(&cfg.buf_cap,    "buf",   10, "line buffer capacity in MB")
 	flag.IntVar(&cfg.item_col,   "coli",   1, "1-based column number of item name")
 	flag.IntVar(&cfg.users_col,  "colu",   2, "1-based column number of users names")
-	flag.IntVar(&cfg.workers,    "cmin",   1, "minimum number of common users to show in output")
+	flag.IntVar(&cfg.c_min,      "cmin",   1, "minimum number of common users to show in output")
 	flag.IntVar(&cfg.workers,    "w",      1, "number of workers")
 	flag.IntVar(&cfg.sketch_cap, "k",      0, "KMV sketch capacity, zero for no KMV usage")
 	

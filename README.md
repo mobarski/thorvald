@@ -46,6 +46,8 @@ TODO
 - multiple similarity metrics: cos, npmi, logdice, jaccard and more
 - parallel processing
 - KMV sketch based acceleration
+- easy deployment: single, statically-linked executable
+- easy build process: `go build thorvald.go`
 
 TODO
 
@@ -54,16 +56,18 @@ TODO
 |       option | info |
 | -----------: | ---- | 
 |        **i** | input path |
-|        **o** | output path prefix (TODO: partitions) |
+|        **o** | output path prefix (partitions will have .pX suffix) |
 |        **f** | output format, (default: aname,bname,c) |
 |        **w** | number of workers (default: 1) |
 |       **ih** | input has header |
-|       **oh** | include header in output (TODO) |
-|       **ph** | include header in each partition (TODO) |
+|       **oh** | include header in output |
+|       **ph** | include header in each partition |
 |      **buf** | line buffer capacity in MB (default: 10) |
 |     **coli** | column number of item name (1-based) (default: 1) |
 |     **colu** | column number of users names (1-based) (default: 2) |
 |     **cmin** | minimum number of common users to show in output (default: 1) |
+|     **diag** | include diagonal in the output |
+|     **full** | include diagonal and lower triangle in the output (TODO) |
 
 ## Output format
 
@@ -90,7 +94,6 @@ TODO
 |       **pmi** | PMI - Pointwise Mutual Information |
 |      **npmi** | NPMI - Normalized Pointwise Mutual Information |
 |     **anpmi** | absolute NPMI |
-|  **tanimoto** | Tanimoto index |
 
 # Planed features
 
