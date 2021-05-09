@@ -41,8 +41,6 @@ i3	i4	0.288675
 - easy deployment: single, statically-linked executable
 - easy build process: `go build thorvald.go`
 
-TODO
-
 # CLI options
 
 |       option | info |
