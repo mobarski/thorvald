@@ -12,10 +12,10 @@ TODO
 
 ```
 item	users
-i1	u1,u2,u3,u4,u5,u6
+i1	u1,u2,u3,u4,u5,u6,u7
 i2	u1,u3,u5,u7,u9
 i3	u2,u4,u6,u8
-i4	u1,u2,u3,u7,u8
+i4	u2,u3,u5
 ```
 
 ## Invocation
@@ -26,11 +26,11 @@ i4	u1,u2,u3,u7,u8
 
 ```
 aname	bname	c
-i1	i2	3
+i1	i2	4
 i1	i3	3
 i1	i4	3
-i2	i4	3
-i3	i4	2
+i2	i4	2
+i3	i4	1
 ```
 
 ## Performance
@@ -63,7 +63,7 @@ TODO
 |     **colu** | column number of users names (1-based) (default: 2) |
 |     **cmin** | minimum number of common users to show in output (default: 1) |
 |     **diag** | include diagonal in the output |
-|     **full** | include diagonal and lower triangle in the output (TODO) |
+|     **full** | include upper and lower triangle in the output |
 
 ## Output format
 

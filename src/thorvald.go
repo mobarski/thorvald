@@ -57,12 +57,13 @@ func (b *bar) Add(x int) {
 	rate := float64(b.done) / elapsed.Seconds()
 	if b.total>0 {
 		done_pct := float64(b.done) / float64(b.total) * 100
-		// width := 40
-		// bar_done_cnt := int(done_pct / (100. / float64(width)))
-		// bar_todo_cnt := width - bar_done_cnt
-		// bar_done_str := strings.Repeat("=",bar_done_cnt)
-		// bar_todo_str := strings.Repeat("-",bar_todo_cnt)
-		fmt.Printf("\r%s: %d / %d %s (%.f%%) -> %.1fs (%.1f %s/s)", b.label, b.done, b.total, b.unit, done_pct, elapsed.Seconds(), rate, b.unit)
+		// bar
+		width := 20
+		bar_done_cnt := int(done_pct / (100. / float64(width)))
+		bar_todo_cnt := width - bar_done_cnt
+		bar_done_str := strings.Repeat("=",bar_done_cnt)
+		bar_todo_str := strings.Repeat(" ",bar_todo_cnt)
+		fmt.Printf("\r%s: [%s%s] %d / %d %s (%.f%%) -> %.1fs (%.1f %s/s)", b.label, bar_done_str, bar_todo_str, b.done, b.total, b.unit, done_pct, elapsed.Seconds(), rate, b.unit)
 	} else {
 		fmt.Printf("\r%s: %d %s -> %.1fs (%.1f %s/s)", b.label, b.done, b.unit, elapsed.Seconds(), rate, b.unit)
 	}
@@ -288,22 +289,22 @@ func core(cfg *Cfg) {
 				if c < c_min {
 					continue
 				}
-				if j==i && !(diagonal || full) {
+				if j==i && !diagonal {
 					continue
 				}
 				// TODO: limitowanie outputu na podstawie jakiejs metryki -> overlap? abs(npmi)?
-				
 				// TODO: col -> inty zamiast stringow, przekodowanie na poczatku programu
 				for k,col := range output_fmt {
 					switch col {
 						case "aname"     : fmt.Fprintf(w, "%s", mi)
 						case "bname"     : fmt.Fprintf(w, "%s", mj)
-						case "partition" : fmt.Fprintf(w, "%d", i0)
 						case "ai"        : fmt.Fprintf(w, "%d", i)
 						case "bi"        : fmt.Fprintf(w, "%d", j)
 						case "ci"        : fmt.Fprintf(w, "%d", i*items_cnt+j)
 						case "a"         : fmt.Fprintf(w, "%d", a)
 						case "b"         : fmt.Fprintf(w, "%d", b)
+						// symetric
+						case "partition" : fmt.Fprintf(w, "%d", i0)
 						case "c"         : fmt.Fprintf(w, "%d", c)
 						case "craw"      : fmt.Fprintf(w, "%d", common_cnt_raw)
 						case "cos"       : fmt.Fprintf(w, "%f", cos)
@@ -320,6 +321,39 @@ func core(cfg *Cfg) {
 						fmt.Fprint(w,"\n")
 					} else {
 						fmt.Fprint(w,"\t")
+					}
+				}
+				// UGLY: refactor !!!
+				if full && i!=j {
+					for k,col := range output_fmt {
+						switch col {
+							// asymetric - changed
+							case "aname"     : fmt.Fprintf(w, "%s", mj)
+							case "bname"     : fmt.Fprintf(w, "%s", mi)
+							case "ai"        : fmt.Fprintf(w, "%d", j)
+							case "bi"        : fmt.Fprintf(w, "%d", i)
+							case "ci"        : fmt.Fprintf(w, "%d", j*items_cnt+i)
+							case "a"         : fmt.Fprintf(w, "%d", b)
+							case "b"         : fmt.Fprintf(w, "%d", a)
+							// symetric
+							case "partition" : fmt.Fprintf(w, "%d", i0)
+							case "c"         : fmt.Fprintf(w, "%d", c)
+							case "craw"      : fmt.Fprintf(w, "%d", common_cnt_raw)
+							case "cos"       : fmt.Fprintf(w, "%f", cos)
+							case "jaccard"   : fmt.Fprintf(w, "%f", jaccard)
+							case "dice"      : fmt.Fprintf(w, "%f", dice)
+							case "overlap"   : fmt.Fprintf(w, "%f", overlap)
+							case "lift"      : fmt.Fprintf(w, "%f", lift)
+							case "pmi"       : fmt.Fprintf(w, "%f", pmi)
+							case "npmi"      : fmt.Fprintf(w, "%f", npmi)
+							case "anpmi"     : fmt.Fprintf(w, "%f", anpmi)
+							case "logdice"   : fmt.Fprintf(w, "%f", logdice)
+						}
+						if k==len(output_fmt)-1 {
+							fmt.Fprint(w,"\n")
+						} else {
+							fmt.Fprint(w,"\t")
+						}
 					}
 				}
 			}
