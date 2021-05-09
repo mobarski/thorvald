@@ -58,12 +58,13 @@ func (b *bar) Add(x int) {
 	if b.total>0 {
 		done_pct := float64(b.done) / float64(b.total) * 100
 		// bar
-		width := 20
-		bar_done_cnt := int(done_pct / (100. / float64(width)))
-		bar_todo_cnt := width - bar_done_cnt
-		bar_done_str := strings.Repeat("=",bar_done_cnt)
-		bar_todo_str := strings.Repeat(" ",bar_todo_cnt)
-		fmt.Printf("\r%s: [%s%s] %d / %d %s (%.f%%) -> %.1fs (%.1f %s/s)", b.label, bar_done_str, bar_todo_str, b.done, b.total, b.unit, done_pct, elapsed.Seconds(), rate, b.unit)
+		// width := 20
+		// bar_done_cnt := int(done_pct / (100. / float64(width)))
+		// bar_todo_cnt := width - bar_done_cnt
+		// bar_done_str := strings.Repeat("=",bar_done_cnt)
+		// bar_todo_str := strings.Repeat(" ",bar_todo_cnt)
+		// fmt.Printf("\r%s: [%s%s] %d / %d %s (%.f%%) -> %.1fs (%.1f %s/s)", b.label, bar_done_str, bar_todo_str, b.done, b.total, b.unit, done_pct, elapsed.Seconds(), rate, b.unit)
+		fmt.Printf("\r%s: %d / %d %s (%.f%%) -> %.1fs (%.1f %s/s)", b.label, b.done, b.total, b.unit, done_pct, elapsed.Seconds(), rate, b.unit)
 	} else {
 		fmt.Printf("\r%s: %d %s -> %.1fs (%.1f %s/s)", b.label, b.done, b.unit, elapsed.Seconds(), rate, b.unit)
 	}
