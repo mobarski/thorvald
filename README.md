@@ -25,12 +25,12 @@ i4	u2,u3,u5
 ## Example output file
 
 ```
-aname	bname	c
-i1	i2	4
-i1	i3	3
-i1	i4	3
-i2	i4	2
-i3	i4	1
+aname	bname	cos
+i1	i2	0.676123
+i1	i3	0.566947
+i1	i4	0.654654
+i2	i4	0.516398
+i3	i4	0.288675
 ```
 
 ## Performance
@@ -53,7 +53,7 @@ TODO
 | -----------: | ---- | 
 |        **i** | input path |
 |        **o** | output path prefix (partitions will have .pX suffix) |
-|        **f** | output format, (default: aname,bname,c) |
+|        **f** | output format, (default: aname,bname,cos) |
 |        **w** | number of workers (default: 1) |
 |       **ih** | input has header |
 |       **oh** | include header in output |
@@ -99,7 +99,6 @@ TODO
 - distributed processing support
 - better output limiter
 - asymetrical metrics
-- non-triangular output
 - item,context,users input format
 - item-item combinations reduction via item features
 

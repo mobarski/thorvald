@@ -392,7 +392,7 @@ func main() {
 	
 	flag.StringVar(&cfg.input_path,  "i",   "", "input path")
 	flag.StringVar(&cfg.output_path, "o",   "", "output path template, %d will be replaced with partition number")
-	flag.StringVar(&cfg.output_fmt,  "f",   "aname,bname,c", "output format")
+	flag.StringVar(&cfg.output_fmt,  "f",   "aname,bname,cos", "output format")
 	
 	flag.BoolVar(&cfg.header_in,   "ih", false, "input header")
 	flag.BoolVar(&cfg.header_out,  "oh", false, "output header")
