@@ -33,10 +33,6 @@ i2	i4	0.516398
 i3	i4	0.288675
 ```
 
-## Performance
-
-TODO
-
 ## Features
 
 - multiple similarity metrics: cos, npmi, logdice, jaccard and more
@@ -90,6 +86,10 @@ TODO
 |       **pmi** | PMI - Pointwise Mutual Information |
 |      **npmi** | NPMI - Normalized Pointwise Mutual Information |
 |     **anpmi** | absolute NPMI |
+
+# Performance
+
+TODO
 
 # Planed features
 
