@@ -55,8 +55,8 @@ i3	i4	0.288675
 |       **ph** | include header in each partition |
 |      **buf** | line buffer capacity in MB (default: 10) |
 |     **coli** | column number of item name (1-based) (default: 1) |
-|     **colu** | column number of users names (1-based) (default: 2) |
-|     **cmin** | minimum number of common users to show in output (default: 1) |
+|     **colf** | column number of features (1-based) (default: 2) |
+|     **cmin** | minimum number of common features to show in output (default: 1) |
 |     **diag** | include diagonal in the output |
 |     **full** | include upper and lower triangle in the output |
 
@@ -70,9 +70,9 @@ i3	i4	0.288675
 |        **bi** | index of item B |
 |        **ci** | result index in 1d array -> ai*num_items + bi |
 | **partition** | partition/worker ID  |
-|         **a** | number of users of item A |
-|         **b** | number of users of item B |
-|         **c** | number of users common to item A and item B |
+|         **a** | number of features of item A |
+|         **b** | number of features of item B |
+|         **c** | number of features common to item A and item B |
 |      **araw** | raw number of elements in sketch A (TODO) |
 |      **braw** | raw number of elements in sketch B (TODO) |
 |      **craw** | raw number of elements in intersection of sketch A and B |

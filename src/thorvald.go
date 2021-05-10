@@ -107,7 +107,7 @@ type Cfg struct {
 	buf_cap     int
 	sketch_cap  int
 	item_col    int
-	users_col   int
+	features_col   int
 	output_fmt  string
 	workers     int
 	c_min       int
@@ -119,20 +119,20 @@ type Cfg struct {
 }
 
 func core(cfg *Cfg) {
-	buf_cap     := cfg.buf_cap * 1024*1024
-	sketch_cap  := cfg.sketch_cap
-	input_path  := cfg.input_path
-	output_path := cfg.output_path
-	item_col    := cfg.item_col-1
-	users_col   := cfg.users_col-1
-	output_fmt  := strings.Split(cfg.output_fmt, ",")
-	workers     := cfg.workers // TODO jezeli=0 to tyle ile cpu
-	c_min       := cfg.c_min
-	header_in   := cfg.header_in
-	header_out  := cfg.header_out
-	header_part := cfg.header_part
-	diagonal    := cfg.diagonal
-	full        := cfg.full
+	buf_cap      := cfg.buf_cap * 1024*1024
+	sketch_cap   := cfg.sketch_cap
+	input_path   := cfg.input_path
+	output_path  := cfg.output_path
+	item_col     := cfg.item_col-1
+	features_col := cfg.features_col-1
+	output_fmt   := strings.Split(cfg.output_fmt, ",")
+	workers      := cfg.workers // TODO jezeli=0 to tyle ile cpu
+	c_min        := cfg.c_min
+	header_in    := cfg.header_in
+	header_out   := cfg.header_out
+	header_part  := cfg.header_part
+	diagonal     := cfg.diagonal
+	full         := cfg.full
 	
 	// --- SET / KMV SKETCH CONSTRUCTION --------------------------------------
 	
@@ -148,9 +148,9 @@ func core(cfg *Cfg) {
 		scanner.Scan()
 	}
 	
-	users_by_item := make(map[string]map[uint32]bool)
+	features_by_item := make(map[string]map[uint32]bool)
 	range_by_item := make(map[string]int)
-	all_users := make(map[uint32]bool)
+	all_features := make(map[uint32]bool)
 	
 	//fo,err := os.Create("sketch.estimation.tsv") // TODO: co z tym plikiem ???
 	//check(err)
@@ -162,31 +162,31 @@ func core(cfg *Cfg) {
 		rec := strings.Split(text, "\t")
 		//fmt.Printf("len rec[0]=%d rec[1]=%d \n",len(rec[0]),len(rec[1]))
 		item := rec[item_col]
-		users := strings.Split(rec[users_col], ",") // TODO: check error
+		features := strings.Split(rec[features_col], ",") // TODO: check error
 		
 		// SKETCH
-		users_hash := make([]int, 0, len(users)) // TODO: rename users_hash
-		for _,user := range users {
-			hash := int(crc32.Checksum([]byte(user), crcTable))
-			users_hash = append(users_hash, hash)
-			all_users[uint32(hash)] = true // not a sketch part -> for metrics
+		features_hash := make([]int, 0, len(features)) // TODO: rename features_hash
+		for _,feature := range features {
+			hash := int(crc32.Checksum([]byte(feature), crcTable))
+			features_hash = append(features_hash, hash)
+			all_features[uint32(hash)] = true // not a sketch part -> for metrics
 		}
 		var sketch []int // TODO: rename sketch
 		if sketch_cap>0 {
-			sort.Ints(users_hash)
-			sketch_len := min(len(users_hash),sketch_cap)
-			sketch = users_hash[:sketch_len]
+			sort.Ints(features_hash)
+			sketch_len := min(len(features_hash),sketch_cap)
+			sketch = features_hash[:sketch_len]
 		} else {
-			sketch = users_hash
+			sketch = features_hash
 		}
 		
 		// SET
-		users_set := make(map[uint32]bool)
+		features_set := make(map[uint32]bool)
 		for _,hash := range sketch {
-			users_set[uint32(hash)] = true
+			features_set[uint32(hash)] = true
 		}
-		users_by_item[item] = users_set
-		range_by_item[item] = len(users_hash)
+		features_by_item[item] = features_set
+		range_by_item[item] = len(features_hash)
 		
 		pg.Add(1)
 	}
@@ -195,21 +195,21 @@ func core(cfg *Cfg) {
 	file.Close()
 	pg.Close()
 
-	//fmt.Printf("items[1] users cnt %d\n",len(users_by_item["f1"])) // XXX 
-	//fmt.Printf("items[2] users cnt %d\n",len(users_by_item["f2"])) // XXX
+	//fmt.Printf("items[1] features cnt %d\n",len(features_by_item["f1"])) // XXX 
+	//fmt.Printf("items[2] features cnt %d\n",len(features_by_item["f2"])) // XXX
 	
 	
 	// --- INTERSECTION -------------------------------------------------------
 	
-	items_cnt := len(users_by_item)
+	items_cnt := len(features_by_item)
 	//items_cnt := 100 // XXX
 	items := make([]string, 0, items_cnt)
-	for name := range users_by_item {
+	for name := range features_by_item {
 		items = append(items, name)
 	}
 	sort.Strings(items)
 	
-	all_users_cnt := len(all_users)
+	all_features_cnt := len(all_features)
 	pg = Progress(items_cnt,"CALC","items")
 	var wg sync.WaitGroup
 	f := func(i0,ii int) {
@@ -247,11 +247,11 @@ func core(cfg *Cfg) {
 					var a map[uint32]bool
 					var b map[uint32]bool
 					if mi_cnt < mj_cnt {
-						a = users_by_item[mi]
-						b = users_by_item[mj]
+						a = features_by_item[mi]
+						b = features_by_item[mj]
 					} else {
-						b = users_by_item[mi]
-						a = users_by_item[mj]
+						b = features_by_item[mi]
+						a = features_by_item[mj]
 					}
 					for u := range a {
 						_,ok := b[u]
@@ -277,9 +277,9 @@ func core(cfg *Cfg) {
 				dice     := float64(2*c) / float64(a+b)
 				logdice  := 14.0 + math.Log2(dice)
 				overlap  := float64(c) / float64(min(a,b))
-				lift     := float64(c) / float64(a*b) * float64(all_users_cnt)
+				lift     := float64(c) / float64(a*b) * float64(all_features_cnt)
 				pmi      := math.Log(lift)
-				npmi     := pmi / -math.Log(float64(c) / float64(all_users_cnt))
+				npmi     := pmi / -math.Log(float64(c) / float64(all_features_cnt))
 				anpmi    := math.Abs(npmi)
 
 				// --- OUTPUT ---
@@ -338,10 +338,10 @@ func core(cfg *Cfg) {
 			
 	// press_enter("\npress ENTER to reclaim memory")
 
-	// for m := range users_by_item {
-		// users_by_item[m] = nil
+	// for m := range features_by_item {
+		// features_by_item[m] = nil
 	// }
-	// users_by_item = nil
+	// features_by_item = nil
 	// runtime.GC()
 	// debug.FreeOSMemory()
 
@@ -365,12 +365,12 @@ func main() {
 	flag.BoolVar(&cfg.diagonal,  "diag", false, "include diagonal in output")
 	flag.BoolVar(&cfg.full,      "full", false, "full output (including diagonal and lower triangle) (TODO)")
 	
-	flag.IntVar(&cfg.buf_cap,    "buf",   10, "line buffer capacity in MB")
-	flag.IntVar(&cfg.item_col,   "coli",   1, "1-based column number of item name")
-	flag.IntVar(&cfg.users_col,  "colu",   2, "1-based column number of users names")
-	flag.IntVar(&cfg.c_min,      "cmin",   1, "minimum number of common users to show in output")
-	flag.IntVar(&cfg.workers,    "w",      1, "number of workers")
-	flag.IntVar(&cfg.sketch_cap, "k",      0, "KMV sketch capacity, zero for no KMV usage")
+	flag.IntVar(&cfg.buf_cap,      "buf",   10, "line buffer capacity in MB")
+	flag.IntVar(&cfg.item_col,     "coli",   1, "1-based column number of item name")
+	flag.IntVar(&cfg.features_col, "colf",   2, "1-based column number of features")
+	flag.IntVar(&cfg.c_min,        "cmin",   1, "minimum number of common features to show in output")
+	flag.IntVar(&cfg.workers,      "w",      1, "number of workers")
+	flag.IntVar(&cfg.sketch_cap,   "k",      0, "KMV sketch capacity, zero for no KMV usage")
 	
 	flag.Usage = func() {
 		fmt.Printf("Usage of this program:\n")
