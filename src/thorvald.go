@@ -39,7 +39,7 @@ func max_u32(x, y uint32) uint32 {
 
 // --- PROGRESS ---
 
-type bar struct {
+type progress struct {
 	total uint64
 	label string
 	unit  string
@@ -47,33 +47,25 @@ type bar struct {
 	t0    time.Time
 }
 
-func Bar(total int, label string, unit string) bar {
-	return bar{uint64(total), label, unit, 0, time.Now()}
+func Progress(total int, label string, unit string) progress {
+	return progress{uint64(total), label, unit, 0, time.Now()}
 }
 
-func (b *bar) Add(x int) {
-	atomic.AddUint64(&b.done,uint64(x))
-	elapsed := time.Since(b.t0)
-	rate := float64(b.done) / elapsed.Seconds()
-	if b.total>0 {
-		done_pct := float64(b.done) / float64(b.total) * 100
-		// bar
-		// width := 20
-		// bar_done_cnt := int(done_pct / (100. / float64(width)))
-		// bar_todo_cnt := width - bar_done_cnt
-		// bar_done_str := strings.Repeat("=",bar_done_cnt)
-		// bar_todo_str := strings.Repeat(" ",bar_todo_cnt)
-		// fmt.Printf("\r%s: [%s%s] %d / %d %s (%.f%%) -> %.1fs (%.1f %s/s)", b.label, bar_done_str, bar_todo_str, b.done, b.total, b.unit, done_pct, elapsed.Seconds(), rate, b.unit)
-		fmt.Printf("\r%s: %d / %d %s (%.f%%) -> %.1fs (%.1f %s/s)", b.label, b.done, b.total, b.unit, done_pct, elapsed.Seconds(), rate, b.unit)
+func (p *progress) Add(x int) {
+	atomic.AddUint64(&p.done,uint64(x))
+	elapsed := time.Since(p.t0)
+	rate := float64(p.done) / elapsed.Seconds()
+	if p.total>0 {
+		done_pct := float64(p.done) / float64(p.total) * 100
+		fmt.Printf("\r%s: %d / %d %s (%.f%%) -> %.1fs (%.1f %s/s)", p.label, p.done, p.total, p.unit, done_pct, elapsed.Seconds(), rate, p.unit)
 	} else {
-		fmt.Printf("\r%s: %d %s -> %.1fs (%.1f %s/s)", b.label, b.done, b.unit, elapsed.Seconds(), rate, b.unit)
+		fmt.Printf("\r%s: %d %s -> %.1fs (%.1f %s/s)", p.label, p.done, p.unit, elapsed.Seconds(), rate, p.unit)
 	}
 	// TODO: remaining
 	// TODO: rate
-	// TODO: bar
 }
 
-func (b *bar) Close() {
+func (p *progress) Close() {
 	fmt.Printf("\n")
 }
 
@@ -164,7 +156,7 @@ func core(cfg *Cfg) {
 	//check(err)
 	//w := bufio.NewWriter(fo)
 	
-	bar := Bar(0,"LOAD","items")
+	pg := Progress(0,"LOAD","items")
 	for scanner.Scan() {
 		text := scanner.Text()
 		rec := strings.Split(text, "\t")
@@ -196,12 +188,12 @@ func core(cfg *Cfg) {
 		users_by_item[item] = users_set
 		range_by_item[item] = len(users_hash)
 		
-		bar.Add(1)
+		pg.Add(1)
 	}
 	//w.Flush()
 	//fo.Close()
 	file.Close()
-	bar.Close()
+	pg.Close()
 
 	//fmt.Printf("items[1] users cnt %d\n",len(users_by_item["f1"])) // XXX 
 	//fmt.Printf("items[2] users cnt %d\n",len(users_by_item["f2"])) // XXX
@@ -218,7 +210,7 @@ func core(cfg *Cfg) {
 	sort.Strings(items)
 	
 	all_users_cnt := len(all_users)
-	bar = Bar(items_cnt,"CALC","items")
+	pg = Progress(items_cnt,"CALC","items")
 	var wg sync.WaitGroup
 	f := func(i0,ii int) {
 		filename := output_path
@@ -329,7 +321,7 @@ func core(cfg *Cfg) {
 					}
 				}
 			}
-			bar.Add(1) // progress // TODO: ilosc intersekcji ???
+			pg.Add(1) // progress // TODO: ilosc intersekcji ???
 		}
 		w.Flush()
 		fo.Close()
@@ -342,7 +334,7 @@ func core(cfg *Cfg) {
 		go f(i,W)
 	}
 	wg.Wait()
-	bar.Close()
+	pg.Close()
 			
 	// press_enter("\npress ENTER to reclaim memory")
 
