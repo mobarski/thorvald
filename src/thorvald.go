@@ -66,7 +66,7 @@ func (p *progress) Add(x int) {
 }
 
 func (p *progress) Close() {
-	fmt.Printf("\n")
+	fmt.Fprintf(os.Stderr, "\n")
 }
 
 // --- SKETCH UTILS ---
@@ -89,7 +89,7 @@ func estimate_intersection(sketch_len int, sketch_cap int, a_cnt int, b_cnt int,
 }
 
 func press_enter(msg string) {
-	fmt.Println(msg)
+	fmt.Fprintln(os.Stderr, msg)
 	var x string; fmt.Scanf("%s",&x)
 }
 
@@ -217,8 +217,12 @@ func core(cfg *Cfg) {
 		if workers>=2 {
 			filename += fmt.Sprintf(".p%d",i0+1)
 		}
-		fo,err := os.Create(filename)
-		check(err)
+		fo := os.Stdout
+		if len(output_path)>0 {
+			fo2,err := os.Create(filename)
+			check(err)
+			fo = fo2
+		}
 		w := bufio.NewWriter(fo)
 		//
 		if header_part || header_out && i0==0 {
@@ -355,7 +359,7 @@ func main() {
 	cfg := Cfg{}
 	
 	flag.StringVar(&cfg.input_path,  "i",   "", "input path")
-	flag.StringVar(&cfg.output_path, "o",   "", "output path template, %d will be replaced with partition number")
+	flag.StringVar(&cfg.output_path, "o",   "", "output path prefix (partitions will have .pX suffix)")
 	flag.StringVar(&cfg.output_fmt,  "f",   "aname,bname,cos", "output format")
 	
 	flag.BoolVar(&cfg.header_in,   "ih", false, "input header")
@@ -373,11 +377,19 @@ func main() {
 	flag.IntVar(&cfg.sketch_cap,   "k",      0, "KMV sketch capacity, zero for no KMV usage")
 	
 	flag.Usage = func() {
-		fmt.Printf("Usage of this program:\n")
-		fmt.Printf("./thorvald -i input.tsv -o output.tsv\n")
+		fmt.Fprintf(os.Stderr, "Usage of this program:\n")
+		fmt.Fprintf(os.Stderr, "./thorvald -i input.tsv -o output.tsv\n\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
 	// TODO walidacja cfg
+	
+	//cfg.rest = flag.Args()
+	n_args := len(os.Args[1:])
+	if n_args==0 {
+		flag.Usage()
+		return
+	}
+	
 	core(&cfg)
 }
