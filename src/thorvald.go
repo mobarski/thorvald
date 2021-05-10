@@ -151,6 +151,7 @@ func core(cfg *Cfg) {
 	features_by_item := make(map[string]map[uint32]bool)
 	range_by_item := make(map[string]int)
 	all_features := make(map[uint32]bool)
+	feature_freq := make(map[uint32]int)
 	
 	//fo,err := os.Create("sketch.estimation.tsv") // TODO: co z tym plikiem ???
 	//check(err)
@@ -170,6 +171,7 @@ func core(cfg *Cfg) {
 			hash := int(crc32.Checksum([]byte(feature), crcTable))
 			features_hash = append(features_hash, hash)
 			all_features[uint32(hash)] = true // not a sketch part -> for metrics
+			feature_freq[uint32(hash)] += 1 // not a sketch part -> for inverse feature frequency
 		}
 		var sketch []int // TODO: rename sketch
 		if sketch_cap>0 {
