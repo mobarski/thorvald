@@ -57,9 +57,9 @@ func (p *progress) Add(x int) {
 	rate := float64(p.done) / elapsed.Seconds()
 	if p.total>0 {
 		done_pct := float64(p.done) / float64(p.total) * 100
-		fmt.Printf("\r%s: %d / %d %s (%.f%%) -> %.1fs (%.1f %s/s)", p.label, p.done, p.total, p.unit, done_pct, elapsed.Seconds(), rate, p.unit)
+		fmt.Fprintf(os.Stderr, "\r%s: %d / %d %s (%.f%%) -> %.1fs (%.1f %s/s)", p.label, p.done, p.total, p.unit, done_pct, elapsed.Seconds(), rate, p.unit)
 	} else {
-		fmt.Printf("\r%s: %d %s -> %.1fs (%.1f %s/s)", p.label, p.done, p.unit, elapsed.Seconds(), rate, p.unit)
+		fmt.Fprintf(os.Stderr, "\r%s: %d %s -> %.1fs (%.1f %s/s)", p.label, p.done, p.unit, elapsed.Seconds(), rate, p.unit)
 	}
 	// TODO: remaining
 	// TODO: rate
