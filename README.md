@@ -40,6 +40,7 @@ i3	i4	0.288675
 - KMV sketch based acceleration
 - easy deployment: single, statically-linked executable
 - easy build process: `go build thorvald.go`
+- [unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy)
 
 # CLI options
 
@@ -100,4 +101,4 @@ TODO
 - item,context,users input format
 - item-item combinations reduction via item features
 
-[//]: # (online .md editor: https://markdown-editor.github.io/)
+[//]: # (online .md editor: https://markdown-editor.github.io/ )

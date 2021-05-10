@@ -237,7 +237,11 @@ func core(cfg *Cfg) {
 		for i:=i0; i<items_cnt; i+=ii {
 			mi := items[i]
 			mi_cnt := range_by_item[mi] // exact value - not from sketch
-			for j:=i; j<items_cnt; j++ {
+			j0 := i
+			if full {
+				j0 = 0
+			}
+			for j:=j0; j<items_cnt; j++ {
 				
 				// --- INTERSECTION ---
 				common_cnt := 0
@@ -322,39 +326,6 @@ func core(cfg *Cfg) {
 						fmt.Fprint(w,"\n")
 					} else {
 						fmt.Fprint(w,"\t")
-					}
-				}
-				// UGLY: refactor !!!
-				if full && i!=j {
-					for k,col := range output_fmt {
-						switch col {
-							// asymetric - changed
-							case "aname"     : fmt.Fprintf(w, "%s", mj)
-							case "bname"     : fmt.Fprintf(w, "%s", mi)
-							case "ai"        : fmt.Fprintf(w, "%d", j)
-							case "bi"        : fmt.Fprintf(w, "%d", i)
-							case "ci"        : fmt.Fprintf(w, "%d", j*items_cnt+i)
-							case "a"         : fmt.Fprintf(w, "%d", b)
-							case "b"         : fmt.Fprintf(w, "%d", a)
-							// symetric
-							case "partition" : fmt.Fprintf(w, "%d", i0)
-							case "c"         : fmt.Fprintf(w, "%d", c)
-							case "craw"      : fmt.Fprintf(w, "%d", common_cnt_raw)
-							case "cos"       : fmt.Fprintf(w, "%f", cos)
-							case "jaccard"   : fmt.Fprintf(w, "%f", jaccard)
-							case "dice"      : fmt.Fprintf(w, "%f", dice)
-							case "overlap"   : fmt.Fprintf(w, "%f", overlap)
-							case "lift"      : fmt.Fprintf(w, "%f", lift)
-							case "pmi"       : fmt.Fprintf(w, "%f", pmi)
-							case "npmi"      : fmt.Fprintf(w, "%f", npmi)
-							case "anpmi"     : fmt.Fprintf(w, "%f", anpmi)
-							case "logdice"   : fmt.Fprintf(w, "%f", logdice)
-						}
-						if k==len(output_fmt)-1 {
-							fmt.Fprint(w,"\n")
-						} else {
-							fmt.Fprint(w,"\t")
-						}
 					}
 				}
 			}
