@@ -68,7 +68,6 @@ i3	i4	0.288675
 |     **bname** | name of item B |
 |        **ai** | index of item A |
 |        **bi** | index of item B |
-|        **ci** | result index in 1d array -> ai*num_items + bi |
 | **partition** | partition/worker ID  |
 |         **a** | number of features of item A |
 |         **b** | number of features of item B |
@@ -95,10 +94,10 @@ TODO
 - sketch input
 - sketch output
 - sketch delta update
+- inverse feature frequency
 - distributed processing support
 - better output limiter
-- asymetrical metrics
-- item,context,users input format
 - item-item combinations reduction via item features
+- item,context,users input format
 
 [//]: # (online .md editor: https://markdown-editor.github.io/ )

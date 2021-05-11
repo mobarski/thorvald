@@ -57,9 +57,10 @@ func (p *progress) Add(x int) {
 	rate := float64(p.done) / elapsed.Seconds()
 	if p.total>0 {
 		done_pct := float64(p.done) / float64(p.total) * 100
-		fmt.Fprintf(os.Stderr, "\r%s: %d / %d %s (%.f%%) -> %.1fs (%.1f %s/s)", p.label, p.done, p.total, p.unit, done_pct, elapsed.Seconds(), rate, p.unit)
+		//fmt.Fprintf(os.Stderr, "\r%s: %d / %d %s (%.f%%) -> %.1fs (%.1f %s/s)", p.label, p.done, p.total, p.unit, done_pct, elapsed.Seconds(), rate, p.unit)
+		fmt.Fprintf(os.Stderr, "\r%s: %d %s -> %.1fs (%.1f %s/s) -> %.f%% done ", p.label, p.done, p.unit, elapsed.Seconds(), rate, p.unit, done_pct)
 	} else {
-		fmt.Fprintf(os.Stderr, "\r%s: %d %s -> %.1fs (%.1f %s/s)", p.label, p.done, p.unit, elapsed.Seconds(), rate, p.unit)
+		fmt.Fprintf(os.Stderr, "\r%s: %d %s -> %.1fs (%.1f %s/s) ", p.label, p.done, p.unit, elapsed.Seconds(), rate, p.unit)
 	}
 	// TODO: remaining
 	// TODO: rate
@@ -93,6 +94,21 @@ func press_enter(msg string) {
 	var x string; fmt.Scanf("%s",&x)
 }
 
+func other_triangle_format(fmt []string) []string {
+	out := make([]string,len(fmt))
+	for i,x := range fmt {
+		switch x {
+			case "aname" : out[i] = "bname"
+			case "bname" : out[i] = "aname"
+			case "ai"    : out[i] = "bi"
+			case "bi"    : out[i] = "ai"
+			case "a"     : out[i] = "b"
+			case "b"     : out[i] = "a"
+			default      : out[i] = fmt[i]
+		}
+	}
+	return out
+}
 
 
 func check(err error) {
@@ -152,10 +168,11 @@ func core(cfg *Cfg) {
 	range_by_item := make(map[string]int)
 	all_features := make(map[uint32]bool)
 	feature_freq := make(map[uint32]int)
-	
-	//fo,err := os.Create("sketch.estimation.tsv") // TODO: co z tym plikiem ???
-	//check(err)
-	//w := bufio.NewWriter(fo)
+
+	// XXX
+	// fo,err := os.Create("xxx.sketch.out.tsv")
+	// check(err)
+	// w := bufio.NewWriter(fo)
 	
 	pg := Progress(0,"LOAD","items")
 	for scanner.Scan() {
@@ -178,6 +195,13 @@ func core(cfg *Cfg) {
 			sort.Ints(features_hash)
 			sketch_len := min(len(features_hash),sketch_cap)
 			sketch = features_hash[:sketch_len]
+			// TODO: save sketch
+			// XXX
+			// fmt.Fprintf(w,"%s\t",item)
+			// for _,x := range sketch[:len(sketch)-1] {
+				// fmt.Fprintf(w,"%d,",x)
+			// }
+			// fmt.Fprintf(w,"%d\n",sketch[len(sketch)-1])
 		} else {
 			sketch = features_hash
 		}
@@ -189,11 +213,11 @@ func core(cfg *Cfg) {
 		}
 		features_by_item[item] = features_set
 		range_by_item[item] = len(features_hash)
-		
+			
 		pg.Add(1)
 	}
-	//w.Flush()
-	//fo.Close()
+	// w.Flush()
+	// fo.Close()
 	file.Close()
 	pg.Close()
 
@@ -226,20 +250,21 @@ func core(cfg *Cfg) {
 			fo = fo2
 		}
 		w := bufio.NewWriter(fo)
-		//
+		// other triangle format string (swaped asymetrical columns)
+		other_fmt := make([]string,0)
+		if full {
+			other_fmt = other_triangle_format(output_fmt)
+		}
+		// output header
 		if header_part || header_out && i0==0 {
 			header := strings.Join(output_fmt,"\t")
 			fmt.Fprintf(w, "%s\n", header)
 		}
-		//
+		// item-item loop
 		for i:=i0; i<items_cnt; i+=ii {
 			mi := items[i]
 			mi_cnt := range_by_item[mi] // exact value - not from sketch
-			j0 := i
-			if full {
-				j0 = 0
-			}
-			for j:=j0; j<items_cnt; j++ {
+			for j:=i; j<items_cnt; j++ {
 				
 				// --- INTERSECTION ---
 				common_cnt := 0
@@ -295,35 +320,39 @@ func core(cfg *Cfg) {
 				if j==i && !diagonal {
 					continue
 				}
-				// TODO: limitowanie outputu na podstawie jakiejs metryki -> overlap? abs(npmi)?
-				// TODO: col -> inty zamiast stringow, przekodowanie na poczatku programu
-				for k,col := range output_fmt {
-					switch col {
-						case "aname"     : fmt.Fprintf(w, "%s", mi)
-						case "bname"     : fmt.Fprintf(w, "%s", mj)
-						case "ai"        : fmt.Fprintf(w, "%d", i)
-						case "bi"        : fmt.Fprintf(w, "%d", j)
-						case "ci"        : fmt.Fprintf(w, "%d", i*items_cnt+j)
-						case "a"         : fmt.Fprintf(w, "%d", a)
-						case "b"         : fmt.Fprintf(w, "%d", b)
-						// symetric
-						case "partition" : fmt.Fprintf(w, "%d", i0)
-						case "c"         : fmt.Fprintf(w, "%d", c)
-						case "craw"      : fmt.Fprintf(w, "%d", common_cnt_raw)
-						case "cos"       : fmt.Fprintf(w, "%f", cos)
-						case "jaccard"   : fmt.Fprintf(w, "%f", jaccard)
-						case "dice"      : fmt.Fprintf(w, "%f", dice)
-						case "overlap"   : fmt.Fprintf(w, "%f", overlap)
-						case "lift"      : fmt.Fprintf(w, "%f", lift)
-						case "pmi"       : fmt.Fprintf(w, "%f", pmi)
-						case "npmi"      : fmt.Fprintf(w, "%f", npmi)
-						case "anpmi"     : fmt.Fprintf(w, "%f", anpmi)
-						case "logdice"   : fmt.Fprintf(w, "%f", logdice)
-					}
-					if k==len(output_fmt)-1 {
-						fmt.Fprint(w,"\n")
-					} else {
-						fmt.Fprint(w,"\t")
+				// 
+				format_list := make([][]string,2)
+				format_list[0] = output_fmt // first triangle
+				format_list[1] = other_fmt  // second triangle (not empty only when "-full")
+				for _,format := range format_list {
+					// TODO: col -> inty zamiast stringow, przekodowanie na poczatku programu
+					for k,col := range format {
+						switch col {
+							case "aname"     : fmt.Fprintf(w, "%s", mi)
+							case "bname"     : fmt.Fprintf(w, "%s", mj)
+							case "ai"        : fmt.Fprintf(w, "%d", i)
+							case "bi"        : fmt.Fprintf(w, "%d", j)
+							case "a"         : fmt.Fprintf(w, "%d", a)
+							case "b"         : fmt.Fprintf(w, "%d", b)
+							// symetric
+							case "partition" : fmt.Fprintf(w, "%d", i0)
+							case "c"         : fmt.Fprintf(w, "%d", c)
+							case "craw"      : fmt.Fprintf(w, "%d", common_cnt_raw)
+							case "cos"       : fmt.Fprintf(w, "%f", cos)
+							case "jaccard"   : fmt.Fprintf(w, "%f", jaccard)
+							case "dice"      : fmt.Fprintf(w, "%f", dice)
+							case "overlap"   : fmt.Fprintf(w, "%f", overlap)
+							case "lift"      : fmt.Fprintf(w, "%f", lift)
+							case "pmi"       : fmt.Fprintf(w, "%f", pmi)
+							case "npmi"      : fmt.Fprintf(w, "%f", npmi)
+							case "anpmi"     : fmt.Fprintf(w, "%f", anpmi)
+							case "logdice"   : fmt.Fprintf(w, "%f", logdice)
+						}
+						if k==len(output_fmt)-1 {
+							fmt.Fprint(w,"\n")
+						} else {
+							fmt.Fprint(w,"\t")
+						}
 					}
 				}
 			}
