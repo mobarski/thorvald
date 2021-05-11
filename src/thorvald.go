@@ -264,7 +264,8 @@ func core(cfg *Cfg) {
 		for i:=i0; i<items_cnt; i+=ii {
 			mi := items[i]
 			mi_cnt := range_by_item[mi] // exact value - not from sketch
-			for j:=i; j<items_cnt; j++ {
+			j0 := i // will be 0 when output will be reduced to top X only
+			for j:=j0; j<items_cnt; j++ {
 				
 				// --- INTERSECTION ---
 				common_cnt := 0
