@@ -92,12 +92,12 @@ TODO
 # Planed features
 
 - inverse feature frequency
+- output only top N items
+- context
 - sketch output (+ early exit)
 - sketch input
 - sketch delta update
 - distributed processing support
-- better output limiter
 - item-item combinations reduction via item features
-- item,context,users input format
 
 [//]: # (online .md editor: https://markdown-editor.github.io/ )
