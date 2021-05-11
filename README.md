@@ -40,7 +40,6 @@ i3	i4	0.288675
 - KMV sketch based acceleration
 - easy deployment: single, statically-linked executable
 - easy build process: `go build thorvald.go`
-- [unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy)
 
 # CLI options
 
