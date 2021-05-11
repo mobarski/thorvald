@@ -93,6 +93,7 @@ TODO
 
 - inverse feature frequency
 - output only top N items
+- stdin / stdout support
 - context
 - sketch output (+ early exit)
 - sketch input
