@@ -91,10 +91,10 @@ TODO
 
 # Planed features
 
-- sketch input
-- sketch output
-- sketch delta update
 - inverse feature frequency
+- sketch output (+ early exit)
+- sketch input
+- sketch delta update
 - distributed processing support
 - better output limiter
 - item-item combinations reduction via item features
