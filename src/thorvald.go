@@ -94,6 +94,7 @@ func press_enter(msg string) {
 	var x string; fmt.Scanf("%s",&x)
 }
 
+
 func other_triangle_format(fmt []string) []string {
 	out := make([]string,len(fmt))
 	for i,x := range fmt {
@@ -132,6 +133,7 @@ type Cfg struct {
 	header_part bool
 	diagonal    bool
 	full        bool
+	use_idf     bool
 }
 
 func core(cfg *Cfg) {
@@ -149,7 +151,7 @@ func core(cfg *Cfg) {
 	header_part  := cfg.header_part
 	diagonal     := cfg.diagonal
 	full         := cfg.full
-	
+		
 	// --- SET / KMV SKETCH CONSTRUCTION --------------------------------------
 	
 	crcTable := crc32.MakeTable(crc32.Castagnoli)
@@ -225,7 +227,6 @@ func core(cfg *Cfg) {
 	//fmt.Printf("items[2] features cnt %d\n",len(features_by_item["f2"])) // XXX
 	
 	
-	// --- INTERSECTION -------------------------------------------------------
 	
 	items_cnt := len(features_by_item)
 	//items_cnt := 100 // XXX
@@ -234,8 +235,38 @@ func core(cfg *Cfg) {
 		items = append(items, name)
 	}
 	sort.Strings(items)
-	
 	all_features_cnt := len(all_features)
+
+	// --- IDF ----------------------------------------------------------------
+	
+	use_idf := true // TODO: only when weighted metric in output_fmt -> 12% better performance of item-item similarity
+	
+	feature_idf  := make(map[uint32]float64, len(feature_freq))
+	item_idf_sum := make([]float64,len(items))
+	item_idf_sqr := make([]float64,len(items))
+	
+	if use_idf {
+		for u,freq := range feature_freq {
+			feature_idf[u] = math.Log(float64(len(items)) / float64(freq))
+		}
+		pg = Progress(items_cnt," IDF","items")
+		for i,item := range items {
+			sum := 0.0
+			sqr := 0.0
+			for u := range features_by_item[item] {
+				idf := feature_idf[u]
+				sum += idf
+				sqr += idf*idf
+			}
+			item_idf_sum[i] = sum
+			item_idf_sqr[i] = sqr
+			pg.Add(1)
+		}
+		pg.Close()
+	}
+	
+	// --- INTERSECTION -------------------------------------------------------
+	
 	pg = Progress(items_cnt,"CALC","items")
 	var wg sync.WaitGroup
 	f := func(i0,ii int) {
@@ -269,6 +300,8 @@ func core(cfg *Cfg) {
 				
 				// --- INTERSECTION ---
 				common_cnt := 0
+				common_sum := 0.0
+				common_sqr := 0.0
 				mj := items[j]
 				mj_cnt := range_by_item[mj] // exact value - not from sketch
 				v_max := uint32(0)
@@ -290,6 +323,11 @@ func core(cfg *Cfg) {
 						if ok {
 							common_cnt += 1
 							v_max = max_u32(u, v_max)
+							if use_idf {
+								idf := feature_idf[u]
+								common_sum += idf
+								common_sqr += idf*idf
+							}
 						}
 					}
 				}
@@ -313,6 +351,18 @@ func core(cfg *Cfg) {
 				pmi      := math.Log(lift)
 				npmi     := pmi / -math.Log(float64(c) / float64(all_features_cnt))
 				anpmi    := math.Abs(npmi)
+				wdice    := 0.0
+				wcos     := 0.0
+				woverlap := 0.0
+				wjaccard := 0.0
+				wc       := 0.0
+				if use_idf {
+					wcos = common_sqr / math.Sqrt(item_idf_sqr[i]*item_idf_sqr[j])
+					wdice = 2.0*common_sum / (item_idf_sum[i] + item_idf_sum[j])
+					woverlap = common_sum / math.Min(item_idf_sum[i], item_idf_sum[j])
+					wjaccard = common_sum / (item_idf_sum[i] + item_idf_sum[j] - common_sum)
+					wc = common_sum
+				}
 
 				// --- OUTPUT ---
 				if c < c_min {
@@ -348,6 +398,10 @@ func core(cfg *Cfg) {
 							case "npmi"      : fmt.Fprintf(w, "%f", npmi)
 							case "anpmi"     : fmt.Fprintf(w, "%f", anpmi)
 							case "logdice"   : fmt.Fprintf(w, "%f", logdice)
+							case "wdice"     : fmt.Fprintf(w, "%f", wdice)
+							case "wcos"      : fmt.Fprintf(w, "%f", wcos)
+							case "wjaccard"  : fmt.Fprintf(w, "%f", wjaccard)
+							case "woverlap"  : fmt.Fprintf(w, "%f", woverlap)
 						}
 						if k==len(output_fmt)-1 {
 							fmt.Fprint(w,"\n")
