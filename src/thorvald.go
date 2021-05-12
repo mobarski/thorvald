@@ -402,6 +402,7 @@ func core(cfg *Cfg) {
 							case "wcos"      : fmt.Fprintf(w, "%f", wcos)
 							case "wjaccard"  : fmt.Fprintf(w, "%f", wjaccard)
 							case "woverlap"  : fmt.Fprintf(w, "%f", woverlap)
+							case "wc"        : fmt.Fprintf(w, "%f", wc)
 						}
 						if k==len(output_fmt)-1 {
 							fmt.Fprint(w,"\n")
