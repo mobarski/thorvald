@@ -1,5 +1,6 @@
 # Thorvald
-Similarity calculation engine for item-based collaborative filtering on unary data.
+Similarity calculation engine for unary data (e.g. implicit feedback).
+Designed for item-based collaborative filtering and simple content-based filtering (e.g. for cold-start prevention).
 Named after Thorvald Sørensen.
 
 **WARNING** - this is pre-alpha version.
@@ -8,8 +9,9 @@ Named after Thorvald Sørensen.
 
 TODO
 
-## Example input file
+## Simple example
 
+### Input file
 ```
 item	users
 i1	u1,u2,u3,u4,u5,u6,u7
@@ -18,12 +20,10 @@ i3	u2,u4,u6,u8
 i4	u2,u3,u5
 ```
 
-## Invocation
-
+### Invocation
 ```./thorvald -i input.tsv -o output.tsv -ih -oh```
 
-## Example output file
-
+### Output file
 ```
 aname	bname	cos
 i1	i2	0.676123
@@ -33,11 +33,36 @@ i2	i4	0.516398
 i3	i4	0.288675
 ```
 
+## Another example
+
+### Input file
+```
+item	tags	users
+i1	t1,t2	u1,u2,u3,u4,u5,u6,u7
+i2	t1,t3	u1,u3,u5,u7,u9
+i3	t2,t3	u2,u4,u6,u8
+i4	t2,t4	u2,u3,u5
+```
+
+### Invocation
+```./thorvald -i input.tsv -o output.tsv -ih -oh -colf 3 -f aname,bname,wcos,lift```
+
+### Output file
+```
+aname	bname	wcos	lift
+i1	i2	0.437965	1.028571
+i1	i3	0.411410	0.964286
+i1	i4	0.338247	1.285714
+i2	i4	0.190264	1.200000
+i3	i4	0.096451	0.750000
+```
+
 ## Features
 
 - multiple similarity metrics: cos, npmi, logdice, jaccard and more
+- IDF-like weighting of features (both content-based and user-based)
 - parallel processing
-- KMV sketch based acceleration
+- KMV sketch-based acceleration
 - easy deployment: single, statically-linked executable
 - easy build process: `go build thorvald.go`
 
@@ -83,6 +108,11 @@ i3	i4	0.288675
 |       **pmi** | PMI - Pointwise Mutual Information |
 |      **npmi** | NPMI - Normalized Pointwise Mutual Information |
 |     **anpmi** | absolute NPMI |
+|        **wc** | IDF weighted common features of A and B |
+|      **wcos** | IDF weighted cosine similarity |
+|     **wdice** | IDF weighted Sørensen–Dice index |
+|  **wjaccard** | IDF weighted Jaccard index |
+|  **woverlap** | IDF weighted overlap |
 
 # Performance
 
@@ -90,7 +120,6 @@ TODO
 
 # Planed features
 
-- inverse feature frequency
 - output only top N items
 - stdin / stdout support
 - context
