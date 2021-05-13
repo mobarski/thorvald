@@ -133,44 +133,40 @@ type Cfg struct {
 	header_part bool
 	diagonal    bool
 	full        bool
-	use_idf     bool
 }
 
-func core(cfg *Cfg) {
-	buf_cap      := cfg.buf_cap * 1024*1024
-	sketch_cap   := cfg.sketch_cap
-	input_path   := cfg.input_path
-	output_path  := cfg.output_path
-	item_col     := cfg.item_col-1
-	features_col := cfg.features_col-1
-	output_fmt   := strings.Split(cfg.output_fmt, ",")
-	workers      := cfg.workers // TODO jezeli=0 to tyle ile cpu
-	c_min        := cfg.c_min
-	header_in    := cfg.header_in
-	header_out   := cfg.header_out
-	header_part  := cfg.header_part
-	diagonal     := cfg.diagonal
-	full         := cfg.full
-		
+type Engine struct {
+	features_by_item map[string]map[uint32]bool
+	range_by_item    map[string]int
+	all_features     map[uint32]bool
+	feature_freq     map[uint32]int
+	feature_idf      map[uint32]float64
+	item_idf_sum     []float64
+	item_idf_sqr     []float64
+	buf              []byte
+	items            []string
+	cfg              Cfg
+	use_idf          bool
+	items_cnt        int
+}
+
+
+func (e Engine) load() {
 	// --- SET / KMV SKETCH CONSTRUCTION --------------------------------------
 	
 	crcTable := crc32.MakeTable(crc32.Castagnoli)
-	file, err := os.Open(input_path)
+	file, err := os.Open(e.cfg.input_path)
 	check(err)
 	
-	buf := make([]byte, buf_cap)
+	buf_cap := e.cfg.buf_cap*1024*1024
+	e.buf = make([]byte, buf_cap)
 	scanner := bufio.NewScanner(file)
-	scanner.Buffer(buf, buf_cap)
+	scanner.Buffer(e.buf, buf_cap)
 	scanner.Split(bufio.ScanLines)
-	if header_in {
+	if e.cfg.header_in {
 		scanner.Scan()
 	}
 	
-	features_by_item := make(map[string]map[uint32]bool)
-	range_by_item := make(map[string]int)
-	all_features := make(map[uint32]bool)
-	feature_freq := make(map[uint32]int)
-
 	// XXX
 	// fo,err := os.Create("xxx.sketch.out.tsv")
 	// check(err)
@@ -181,21 +177,21 @@ func core(cfg *Cfg) {
 		text := scanner.Text()
 		rec := strings.Split(text, "\t")
 		//fmt.Printf("len rec[0]=%d rec[1]=%d \n",len(rec[0]),len(rec[1]))
-		item := rec[item_col]
-		features := strings.Split(rec[features_col], ",") // TODO: check error
+		item := rec[e.cfg.item_col-1]
+		features := strings.Split(rec[e.cfg.features_col-1], ",") // TODO: check error
 		
 		// SKETCH
 		features_hash := make([]int, 0, len(features)) // TODO: rename features_hash
 		for _,feature := range features {
 			hash := int(crc32.Checksum([]byte(feature), crcTable))
 			features_hash = append(features_hash, hash)
-			all_features[uint32(hash)] = true // not a sketch part -> for metrics
-			feature_freq[uint32(hash)] += 1 // not a sketch part -> for inverse feature frequency
+			e.all_features[uint32(hash)] = true // not a sketch part -> for metrics
+			e.feature_freq[uint32(hash)] += 1 // not a sketch part -> for inverse feature frequency
 		}
 		var sketch []int // TODO: rename sketch
-		if sketch_cap>0 {
+		if e.cfg.sketch_cap>0 {
 			sort.Ints(features_hash)
-			sketch_len := min(len(features_hash),sketch_cap)
+			sketch_len := min(len(features_hash), e.cfg.sketch_cap)
 			sketch = features_hash[:sketch_len]
 			// TODO: save sketch
 			// XXX
@@ -213,8 +209,8 @@ func core(cfg *Cfg) {
 		for _,hash := range sketch {
 			features_set[uint32(hash)] = true
 		}
-		features_by_item[item] = features_set
-		range_by_item[item] = len(features_hash)
+		e.features_by_item[item] = features_set
+		e.range_by_item[item] = len(features_hash)
 			
 		pg.Add(1)
 	}
@@ -223,51 +219,81 @@ func core(cfg *Cfg) {
 	file.Close()
 	pg.Close()
 
-	//fmt.Printf("items[1] features cnt %d\n",len(features_by_item["f1"])) // XXX 
-	//fmt.Printf("items[2] features cnt %d\n",len(features_by_item["f2"])) // XXX
-	
-	
-	
-	items_cnt := len(features_by_item)
-	//items_cnt := 100 // XXX
-	items := make([]string, 0, items_cnt)
-	for name := range features_by_item {
-		items = append(items, name)
-	}
-	sort.Strings(items)
-	all_features_cnt := len(all_features)
+	//fmt.Printf("items[1] features cnt %d\n",len(e.features_by_item["f1"])) // XXX 
+	//fmt.Printf("items[2] features cnt %d\n",len(e.features_by_item["f2"])) // XXX
+}
 
-	// --- IDF ----------------------------------------------------------------
+
+func (e Engine) idf_calc() {
+	e.use_idf = true // TODO: only when weighted metric in output_fmt -> 12% better performance of item-item similarity
 	
-	use_idf := true // TODO: only when weighted metric in output_fmt -> 12% better performance of item-item similarity
+	e.feature_idf  = make(map[uint32]float64, len(e.feature_freq))
+	e.item_idf_sum = make([]float64,len(e.items))
+	e.item_idf_sqr = make([]float64,len(e.items))
 	
-	feature_idf  := make(map[uint32]float64, len(feature_freq))
-	item_idf_sum := make([]float64,len(items))
-	item_idf_sqr := make([]float64,len(items))
-	
-	if use_idf {
-		for u,freq := range feature_freq {
-			feature_idf[u] = math.Log(float64(len(items)) / float64(freq))
+	if e.use_idf {
+		for u,freq := range e.feature_freq {
+			e.feature_idf[u] = math.Log(float64(len(e.items)) / float64(freq))
 		}
-		pg = Progress(items_cnt," IDF","items")
-		for i,item := range items {
+		pg := Progress(len(e.items)," IDF","items")
+		for i,item := range e.items {
 			sum := 0.0
 			sqr := 0.0
-			for u := range features_by_item[item] {
-				idf := feature_idf[u]
+			for u := range e.features_by_item[item] {
+				idf := e.feature_idf[u]
 				sum += idf
 				sqr += idf*idf
 			}
-			item_idf_sum[i] = sum
-			item_idf_sqr[i] = sqr
+			e.item_idf_sum[i] = sum
+			e.item_idf_sqr[i] = sqr
 			pg.Add(1)
 		}
 		pg.Close()
 	}
+}
+
+
+func (e Engine) main() {
+	//buf_cap      := e.cfg.buf_cap * 1024*1024
+	sketch_cap   := e.cfg.sketch_cap
+	//input_path   := e.cfg.input_path
+	output_path  := e.cfg.output_path
+	//item_col     := e.cfg.item_col-1
+	//features_col := e.cfg.features_col-1
+	workers      := e.cfg.workers // TODO jezeli=0 to tyle ile cpu
+	c_min        := e.cfg.c_min
+	//header_in    := e.cfg.header_in
+	header_out   := e.cfg.header_out
+	header_part  := e.cfg.header_part
+	diagonal     := e.cfg.diagonal
+	full         := e.cfg.full
+	output_fmt   := strings.Split(e.cfg.output_fmt, ",")
+
+	e.features_by_item = make(map[string]map[uint32]bool)
+	e.range_by_item = make(map[string]int)
+	e.all_features = make(map[uint32]bool)
+	e.feature_freq = make(map[uint32]int)
+
+	// --- SET / KMV SKETCH CONSTRUCTION --------------------------------------
+
+	e.load()
+	
+	e.items_cnt = len(e.features_by_item)
+	//e.items_cnt := 100 // XXX
+	e.items = make([]string, 0, e.items_cnt)
+	for name := range e.features_by_item {
+		e.items = append(e.items, name)
+	}
+	sort.Strings(e.items)
+	all_features_cnt := len(e.all_features)
+
+	// --- IDF ----------------------------------------------------------------
+
+	e.idf_calc()
 	
 	// --- INTERSECTION -------------------------------------------------------
 	
-	pg = Progress(items_cnt,"CALC","items")
+	pg := Progress(e.items_cnt,"CALC","items")
 	var wg sync.WaitGroup
 	f := func(i0,ii int) {
 		filename := output_path
@@ -292,18 +318,18 @@ func core(cfg *Cfg) {
 			fmt.Fprintf(w, "%s\n", header)
 		}
 		// item-item loop
-		for i:=i0; i<items_cnt; i+=ii {
-			mi := items[i]
-			mi_cnt := range_by_item[mi] // exact value - not from sketch
+		for i:=i0; i<e.items_cnt; i+=ii {
+			mi := e.items[i]
+			mi_cnt := e.range_by_item[mi] // exact value - not from sketch
 			j0 := i // will be 0 when output will be reduced to top X only
-			for j:=j0; j<items_cnt; j++ {
+			for j:=j0; j<e.items_cnt; j++ {
 				
 				// --- INTERSECTION ---
 				common_cnt := 0
 				common_sum := 0.0
 				common_sqr := 0.0
-				mj := items[j]
-				mj_cnt := range_by_item[mj] // exact value - not from sketch
+				mj := e.items[j]
+				mj_cnt := e.range_by_item[mj] // exact value - not from sketch
 				v_max := uint32(0)
 				if i==j {
 					common_cnt = mi_cnt
@@ -312,19 +338,19 @@ func core(cfg *Cfg) {
 					var a map[uint32]bool
 					var b map[uint32]bool
 					if mi_cnt < mj_cnt {
-						a = features_by_item[mi]
-						b = features_by_item[mj]
+						a = e.features_by_item[mi]
+						b = e.features_by_item[mj]
 					} else {
-						b = features_by_item[mi]
-						a = features_by_item[mj]
+						b = e.features_by_item[mi]
+						a = e.features_by_item[mj]
 					}
 					for u := range a {
 						_,ok := b[u]
 						if ok {
 							common_cnt += 1
 							v_max = max_u32(u, v_max)
-							if use_idf {
-								idf := feature_idf[u]
+							if e.use_idf {
+								idf := e.feature_idf[u]
 								common_sum += idf
 								common_sqr += idf*idf
 							}
@@ -356,11 +382,11 @@ func core(cfg *Cfg) {
 				woverlap := 0.0
 				wjaccard := 0.0
 				wc       := 0.0
-				if use_idf {
-					wcos = common_sqr / math.Sqrt(item_idf_sqr[i]*item_idf_sqr[j])
-					wdice = 2.0*common_sum / (item_idf_sum[i] + item_idf_sum[j])
-					woverlap = common_sum / math.Min(item_idf_sum[i], item_idf_sum[j])
-					wjaccard = common_sum / (item_idf_sum[i] + item_idf_sum[j] - common_sum)
+				if e.use_idf {
+					wcos = common_sqr / math.Sqrt(e.item_idf_sqr[i]*e.item_idf_sqr[j])
+					wdice = 2.0*common_sum / (e.item_idf_sum[i] + e.item_idf_sum[j])
+					woverlap = common_sum / math.Min(e.item_idf_sum[i], e.item_idf_sum[j])
+					wjaccard = common_sum / (e.item_idf_sum[i] + e.item_idf_sum[j] - common_sum)
 					wc = common_sum
 				}
 
@@ -429,10 +455,10 @@ func core(cfg *Cfg) {
 			
 	// press_enter("\npress ENTER to reclaim memory")
 
-	// for m := range features_by_item {
-		// features_by_item[m] = nil
+	// for m := range e.features_by_item {
+		// e.features_by_item[m] = nil
 	// }
-	// features_by_item = nil
+	// e.features_by_item = nil
 	// runtime.GC()
 	// debug.FreeOSMemory()
 
@@ -478,5 +504,7 @@ func main() {
 		return
 	}
 	
-	core(&cfg)
+	e := Engine{}
+	e.cfg = cfg
+	e.main()
 }
