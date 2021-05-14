@@ -151,7 +151,7 @@ type Engine struct {
 }
 
 
-func (e Engine) load() {
+func (e *Engine) load() {
 	// --- SET / KMV SKETCH CONSTRUCTION --------------------------------------
 	
 	crcTable := crc32.MakeTable(crc32.Castagnoli)
@@ -221,10 +221,18 @@ func (e Engine) load() {
 
 	//fmt.Printf("items[1] features cnt %d\n",len(e.features_by_item["f1"])) // XXX 
 	//fmt.Printf("items[2] features cnt %d\n",len(e.features_by_item["f2"])) // XXX
+
+	e.items_cnt = len(e.features_by_item)
+	//e.items_cnt := 100 // XXX
+	e.items = make([]string, 0, e.items_cnt)
+	for name := range e.features_by_item {
+		e.items = append(e.items, name)
+	}
+	sort.Strings(e.items)
 }
 
 
-func (e Engine) idf_calc() {
+func (e *Engine) calc_idf() {
 	e.use_idf = true // TODO: only when weighted metric in output_fmt -> 12% better performance of item-item similarity
 	
 	e.feature_idf  = make(map[uint32]float64, len(e.feature_freq))
@@ -253,55 +261,19 @@ func (e Engine) idf_calc() {
 }
 
 
-func (e Engine) main() {
-	//buf_cap      := e.cfg.buf_cap * 1024*1024
-	sketch_cap   := e.cfg.sketch_cap
-	//input_path   := e.cfg.input_path
-	output_path  := e.cfg.output_path
-	//item_col     := e.cfg.item_col-1
-	//features_col := e.cfg.features_col-1
-	workers      := e.cfg.workers // TODO jezeli=0 to tyle ile cpu
-	c_min        := e.cfg.c_min
-	//header_in    := e.cfg.header_in
-	header_out   := e.cfg.header_out
-	header_part  := e.cfg.header_part
-	diagonal     := e.cfg.diagonal
-	full         := e.cfg.full
-	output_fmt   := strings.Split(e.cfg.output_fmt, ",")
-
-	e.features_by_item = make(map[string]map[uint32]bool)
-	e.range_by_item = make(map[string]int)
-	e.all_features = make(map[uint32]bool)
-	e.feature_freq = make(map[uint32]int)
-
-	// --- SET / KMV SKETCH CONSTRUCTION --------------------------------------
-
-	e.load()
-	
-	e.items_cnt = len(e.features_by_item)
-	//e.items_cnt := 100 // XXX
-	e.items = make([]string, 0, e.items_cnt)
-	for name := range e.features_by_item {
-		e.items = append(e.items, name)
-	}
-	sort.Strings(e.items)
+func (e *Engine) calc_similarity() {
+	output_fmt := strings.Split(e.cfg.output_fmt, ",")
 	all_features_cnt := len(e.all_features)
-
-	// --- IDF ----------------------------------------------------------------
-
-	e.idf_calc()
-	
-	// --- INTERSECTION -------------------------------------------------------
 	
 	pg := Progress(e.items_cnt,"CALC","items")
 	var wg sync.WaitGroup
 	f := func(i0,ii int) {
-		filename := output_path
-		if workers>=2 {
+		filename := e.cfg.output_path
+		if e.cfg.workers>=2 {
 			filename += fmt.Sprintf(".p%d",i0+1)
 		}
 		fo := os.Stdout
-		if len(output_path)>0 {
+		if len(e.cfg.output_path)>0 {
 			fo2,err := os.Create(filename)
 			check(err)
 			fo = fo2
@@ -309,11 +281,11 @@ func (e Engine) main() {
 		w := bufio.NewWriter(fo)
 		// other triangle format string (swaped asymetrical columns)
 		other_fmt := make([]string,0)
-		if full {
+		if e.cfg.full {
 			other_fmt = other_triangle_format(output_fmt)
 		}
 		// output header
-		if header_part || header_out && i0==0 {
+		if e.cfg.header_part || e.cfg.header_out && i0==0 {
 			header := strings.Join(output_fmt,"\t")
 			fmt.Fprintf(w, "%s\n", header)
 		}
@@ -360,8 +332,8 @@ func (e Engine) main() {
 
 				// SKETCH intersection estimation
 				common_cnt_raw := common_cnt
-				if sketch_cap>0 && i!=j {
-					common_cnt = estimate_intersection(common_cnt, sketch_cap, mi_cnt, mj_cnt, v_max)
+				if e.cfg.sketch_cap>0 && i!=j {
+					common_cnt = estimate_intersection(common_cnt, e.cfg.sketch_cap, mi_cnt, mj_cnt, v_max)
 				}
 								
 				// --- METRICS ---
@@ -391,10 +363,10 @@ func (e Engine) main() {
 				}
 
 				// --- OUTPUT ---
-				if c < c_min {
+				if c < e.cfg.c_min {
 					continue
 				}
-				if j==i && !diagonal {
+				if j==i && !e.cfg.diagonal {
 					continue
 				}
 				// 
@@ -445,27 +417,28 @@ func (e Engine) main() {
 		wg.Done()
 	}
 	
-	W := workers
+	W := e.cfg.workers
 	wg.Add(W)
 	for i:=0; i<W; i++ {
 		go f(i,W)
 	}
 	wg.Wait()
 	pg.Close()
-			
+}
+
+
+func (e *Engine) main() {
+
+	e.features_by_item = make(map[string]map[uint32]bool)
+	e.range_by_item = make(map[string]int)
+	e.all_features = make(map[uint32]bool)
+	e.feature_freq = make(map[uint32]int)
+
+	e.load()
+	e.calc_idf()
+	e.calc_similarity()
+	
 	// press_enter("\npress ENTER to reclaim memory")
-
-	// for m := range e.features_by_item {
-		// e.features_by_item[m] = nil
-	// }
-	// e.features_by_item = nil
-	// runtime.GC()
-	// debug.FreeOSMemory()
-
-	//press_enter("\npress ENTER to finish") // XXX
-	//fmt.Println(items[:10]) // XXX
-	//fmt.Println(common[:10]) // XXX
-
 }
 
 func main() {
