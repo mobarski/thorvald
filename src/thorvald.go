@@ -1,10 +1,6 @@
 // Copyright (c) 2021 Maciej Obarski
 // Licensed under GNU General Public License v3.0
 
-// v4 -> parametry CLI
-// v4 -> output format
-// v4 -> item zamiast movie
-
 package main
   
 import (
@@ -135,6 +131,9 @@ type Cfg struct {
 	diagonal    bool
 	full        bool
 }
+
+
+
 
 type Engine struct {
 	features_by_item map[string]map[uint32]bool
@@ -449,9 +448,8 @@ func (e *Engine) main() {
 	// press_enter("\npress ENTER to reclaim memory")
 }
 
-func main() {
-	cfg := Cfg{}
-	
+
+func (cfg *Cfg) parse_args() {
 	flag.StringVar(&cfg.input_path,  "i",   "", "input path")
 	flag.StringVar(&cfg.output_path, "o",   "", "output path prefix (partitions will have .pX suffix)")
 	flag.StringVar(&cfg.output_fmt,  "f",   "ida,idb,cos", "output format")
@@ -482,8 +480,14 @@ func main() {
 	n_args := len(os.Args[1:])
 	if n_args==0 {
 		flag.Usage()
-		return
-	}
+		os.Exit(1)
+	}	
+}
+
+
+func main() {
+	cfg := Cfg{}
+	cfg.parse_args()
 	
 	e := Engine{}
 	e.cfg = cfg
