@@ -92,7 +92,6 @@ i3	i4	0.096451	0.750000
 |       **idb** | id of item B |
 |        **ia** | index of item A |
 |        **ib** | index of item B |
-| **partition** | partition/worker ID  |
 |         **a** | number of features of item A |
 |         **b** | number of features of item B |
 |         **c** | number of features common to item A and item B |
@@ -113,6 +112,7 @@ i3	i4	0.096451	0.750000
 |     **wdice** | IDF weighted Sørensen–Dice index |
 |  **wjaccard** | IDF weighted Jaccard index |
 |  **woverlap** | IDF weighted overlap |
+| **partition** | partition/worker ID  |
 
 # Performance
 
