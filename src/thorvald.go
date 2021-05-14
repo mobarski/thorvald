@@ -100,13 +100,13 @@ func other_triangle_format(fmt []string) []string {
 	out := make([]string,len(fmt))
 	for i,x := range fmt {
 		switch x {
-			case "aname" : out[i] = "bname"
-			case "bname" : out[i] = "aname"
-			case "ai"    : out[i] = "bi"
-			case "bi"    : out[i] = "ai"
-			case "a"     : out[i] = "b"
-			case "b"     : out[i] = "a"
-			default      : out[i] = fmt[i]
+			case "ida" : out[i] = "idb"
+			case "idb" : out[i] = "ida"
+			case "ia"  : out[i] = "ib"
+			case "ib"  : out[i] = "ia"
+			case "a"   : out[i] = "b"
+			case "b"   : out[i] = "a"
+			default    : out[i] = fmt[i]
 		}
 	}
 	return out
@@ -349,10 +349,10 @@ func (e *Engine) item_item(i int, j int, w io.Writer, partition int) {
 		// TODO: col -> inty zamiast stringow, przekodowanie na poczatku programu
 		for k,col := range format {
 			switch col {
-				case "aname"     : fmt.Fprintf(w, "%s", mi)
-				case "bname"     : fmt.Fprintf(w, "%s", mj)
-				case "ai"        : fmt.Fprintf(w, "%d", i)
-				case "bi"        : fmt.Fprintf(w, "%d", j)
+				case "ida"       : fmt.Fprintf(w, "%s", mi)
+				case "idb"       : fmt.Fprintf(w, "%s", mj)
+				case "ia"        : fmt.Fprintf(w, "%d", i)
+				case "ib"        : fmt.Fprintf(w, "%d", j)
 				case "a"         : fmt.Fprintf(w, "%d", a)
 				case "b"         : fmt.Fprintf(w, "%d", b)
 				// symetric
@@ -454,7 +454,7 @@ func main() {
 	
 	flag.StringVar(&cfg.input_path,  "i",   "", "input path")
 	flag.StringVar(&cfg.output_path, "o",   "", "output path prefix (partitions will have .pX suffix)")
-	flag.StringVar(&cfg.output_fmt,  "f",   "aname,bname,cos", "output format")
+	flag.StringVar(&cfg.output_fmt,  "f",   "ida,idb,cos", "output format")
 	
 	flag.BoolVar(&cfg.header_in,   "ih", false, "input header")
 	flag.BoolVar(&cfg.header_out,  "oh", false, "output header")

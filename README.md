@@ -25,7 +25,7 @@ i4	u2,u3,u5
 
 ### Output file
 ```
-aname	bname	cos
+ida	idb	cos
 i1	i2	0.676123
 i1	i3	0.566947
 i1	i4	0.654654
@@ -45,11 +45,11 @@ i4	t2,t4	u2,u3,u5
 ```
 
 ### Invocation
-```./thorvald -i input.tsv -o output.tsv -ih -oh -colf 3 -f aname,bname,wcos,lift```
+```./thorvald -i input.tsv -o output.tsv -ih -oh -colf 3 -f ida,idb,wcos,lift```
 
 ### Output file
 ```
-aname	bname	wcos	lift
+ida	idb	wcos	lift
 i1	i2	0.437965	1.028571
 i1	i3	0.411410	0.964286
 i1	i4	0.338247	1.285714
@@ -72,13 +72,13 @@ i3	i4	0.096451	0.750000
 | -----------: | ---- | 
 |        **i** | input path |
 |        **o** | output path prefix (partitions will have .pX suffix) |
-|        **f** | output format, (default: aname,bname,cos) |
+|        **f** | output format, (default: ida,idb,cos) |
 |        **w** | number of workers (default: 1) |
 |       **ih** | input has header |
 |       **oh** | include header in output |
 |       **ph** | include header in each partition |
 |      **buf** | line buffer capacity in MB (default: 10) |
-|     **coli** | column number of item name (1-based) (default: 1) |
+|     **coli** | column number of item id (1-based) (default: 1) |
 |     **colf** | column number of features (1-based) (default: 2) |
 |     **cmin** | minimum number of common features to show in output (default: 1) |
 |     **diag** | include diagonal in the output |
@@ -88,10 +88,10 @@ i3	i4	0.096451	0.750000
 
 |        option | info |
 | ------------: | ---- |
-|     **aname** | name of item A |
-|     **bname** | name of item B |
-|        **ai** | index of item A |
-|        **bi** | index of item B |
+|       **ida** | id of item A |
+|       **idb** | id of item B |
+|        **ia** | index of item A |
+|        **ib** | index of item B |
 | **partition** | partition/worker ID  |
 |         **a** | number of features of item A |
 |         **b** | number of features of item B |
@@ -121,12 +121,12 @@ TODO
 # Planed features
 
 - output only top N items
+- item-item combinations reduction via item features
 - stdin / stdout support
 - context
 - sketch output (+ early exit)
 - sketch input
 - sketch delta update
 - distributed processing support
-- item-item combinations reduction via item features
 
 [//]: # (online .md editor: https://markdown-editor.github.io/ )
