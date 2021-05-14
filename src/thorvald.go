@@ -19,6 +19,7 @@ import (
 	"sync"
 	"math"
 	"flag"
+	"io"
 	//"runtime"
 	"sync/atomic" // atomic.AddUint32(v, 1) <- (v *uint32)
 )
@@ -145,9 +146,12 @@ type Engine struct {
 	item_idf_sqr     []float64
 	buf              []byte
 	items            []string
+	output_fmt       []string
+	other_fmt        []string
 	cfg              Cfg
 	use_idf          bool
 	items_cnt        int
+	all_features_cnt int
 }
 
 
@@ -261,9 +265,128 @@ func (e *Engine) calc_idf() {
 }
 
 
+func (e *Engine) item_item(i int, j int, w io.Writer, partition int) {
+	mi := e.items[i]
+	mj := e.items[j]
+	mi_cnt := e.range_by_item[mi] // exact value - not from sketch
+	mj_cnt := e.range_by_item[mj] // exact value - not from sketch
+	// --- INTERSECTION ---
+	common_cnt := 0
+	common_sum := 0.0
+	common_sqr := 0.0
+	v_max := uint32(0)
+	if i==j {
+		common_cnt = mi_cnt
+	} else {
+		// set intersection - iter on smaller
+		var a map[uint32]bool
+		var b map[uint32]bool
+		if mi_cnt < mj_cnt {
+			a = e.features_by_item[mi]
+			b = e.features_by_item[mj]
+		} else {
+			b = e.features_by_item[mi]
+			a = e.features_by_item[mj]
+		}
+		for u := range a {
+			_,ok := b[u]
+			if ok {
+				common_cnt += 1
+				v_max = max_u32(u, v_max)
+				if e.use_idf {
+					idf := e.feature_idf[u]
+					common_sum += idf
+					common_sqr += idf*idf
+				}
+			}
+		}
+	}
+
+	// SKETCH intersection estimation
+	common_cnt_raw := common_cnt
+	if e.cfg.sketch_cap>0 && i!=j {
+		common_cnt = estimate_intersection(common_cnt, e.cfg.sketch_cap, mi_cnt, mj_cnt, v_max)
+	}
+					
+	// --- METRICS ---
+	a        := mi_cnt
+	b        := mj_cnt
+	c        := common_cnt
+	cos      := float64(c) / math.Sqrt(float64(a*b))
+	jaccard  := float64(c) / float64(a+b-c)
+	dice     := float64(2*c) / float64(a+b)
+	logdice  := 14.0 + math.Log2(dice)
+	overlap  := float64(c) / float64(min(a,b))
+	lift     := float64(c) / float64(a*b) * float64(e.all_features_cnt)
+	pmi      := math.Log(lift)
+	npmi     := pmi / -math.Log(float64(c) / float64(e.all_features_cnt))
+	anpmi    := math.Abs(npmi)
+	wdice    := 0.0
+	wcos     := 0.0
+	woverlap := 0.0
+	wjaccard := 0.0
+	wc       := 0.0
+	if e.use_idf {
+		wcos = common_sqr / math.Sqrt(e.item_idf_sqr[i]*e.item_idf_sqr[j])
+		wdice = 2.0*common_sum / (e.item_idf_sum[i] + e.item_idf_sum[j])
+		woverlap = common_sum / math.Min(e.item_idf_sum[i], e.item_idf_sum[j])
+		wjaccard = common_sum / (e.item_idf_sum[i] + e.item_idf_sum[j] - common_sum)
+		wc = common_sum
+	}
+
+	// --- OUTPUT ---
+	if c < e.cfg.c_min {
+		return
+	}
+	if j==i && !e.cfg.diagonal {
+		return
+	}
+	// 
+	format_list := make([][]string,2)
+	format_list[0] = e.output_fmt // first triangle
+	format_list[1] = e.other_fmt  // second triangle (not empty only when "-full")
+	for _,format := range format_list {
+		// TODO: col -> inty zamiast stringow, przekodowanie na poczatku programu
+		for k,col := range format {
+			switch col {
+				case "aname"     : fmt.Fprintf(w, "%s", mi)
+				case "bname"     : fmt.Fprintf(w, "%s", mj)
+				case "ai"        : fmt.Fprintf(w, "%d", i)
+				case "bi"        : fmt.Fprintf(w, "%d", j)
+				case "a"         : fmt.Fprintf(w, "%d", a)
+				case "b"         : fmt.Fprintf(w, "%d", b)
+				// symetric
+				case "partition" : fmt.Fprintf(w, "%d", partition)
+				case "c"         : fmt.Fprintf(w, "%d", c)
+				case "craw"      : fmt.Fprintf(w, "%d", common_cnt_raw)
+				case "cos"       : fmt.Fprintf(w, "%f", cos)
+				case "jaccard"   : fmt.Fprintf(w, "%f", jaccard)
+				case "dice"      : fmt.Fprintf(w, "%f", dice)
+				case "overlap"   : fmt.Fprintf(w, "%f", overlap)
+				case "lift"      : fmt.Fprintf(w, "%f", lift)
+				case "pmi"       : fmt.Fprintf(w, "%f", pmi)
+				case "npmi"      : fmt.Fprintf(w, "%f", npmi)
+				case "anpmi"     : fmt.Fprintf(w, "%f", anpmi)
+				case "logdice"   : fmt.Fprintf(w, "%f", logdice)
+				case "wdice"     : fmt.Fprintf(w, "%f", wdice)
+				case "wcos"      : fmt.Fprintf(w, "%f", wcos)
+				case "wjaccard"  : fmt.Fprintf(w, "%f", wjaccard)
+				case "woverlap"  : fmt.Fprintf(w, "%f", woverlap)
+				case "wc"        : fmt.Fprintf(w, "%f", wc)
+			}
+			if k==len(e.output_fmt)-1 {
+				fmt.Fprint(w,"\n")
+			} else {
+				fmt.Fprint(w,"\t")
+			}
+		}
+	}
+}
+
+
 func (e *Engine) calc_similarity() {
-	output_fmt := strings.Split(e.cfg.output_fmt, ",")
-	all_features_cnt := len(e.all_features)
+	e.output_fmt = strings.Split(e.cfg.output_fmt, ",")
+	e.all_features_cnt = len(e.all_features)
 	
 	pg := Progress(e.items_cnt,"CALC","items")
 	var wg sync.WaitGroup
@@ -280,135 +403,20 @@ func (e *Engine) calc_similarity() {
 		}
 		w := bufio.NewWriter(fo)
 		// other triangle format string (swaped asymetrical columns)
-		other_fmt := make([]string,0)
+		e.other_fmt = make([]string,0)
 		if e.cfg.full {
-			other_fmt = other_triangle_format(output_fmt)
+			e.other_fmt = other_triangle_format(e.output_fmt)
 		}
 		// output header
 		if e.cfg.header_part || e.cfg.header_out && i0==0 {
-			header := strings.Join(output_fmt,"\t")
+			header := strings.Join(e.output_fmt,"\t")
 			fmt.Fprintf(w, "%s\n", header)
 		}
 		// item-item loop
 		for i:=i0; i<e.items_cnt; i+=ii {
-			mi := e.items[i]
-			mi_cnt := e.range_by_item[mi] // exact value - not from sketch
 			j0 := i // will be 0 when output will be reduced to top X only
 			for j:=j0; j<e.items_cnt; j++ {
-				
-				// --- INTERSECTION ---
-				common_cnt := 0
-				common_sum := 0.0
-				common_sqr := 0.0
-				mj := e.items[j]
-				mj_cnt := e.range_by_item[mj] // exact value - not from sketch
-				v_max := uint32(0)
-				if i==j {
-					common_cnt = mi_cnt
-				} else {
-					// set intersection - iter on smaller
-					var a map[uint32]bool
-					var b map[uint32]bool
-					if mi_cnt < mj_cnt {
-						a = e.features_by_item[mi]
-						b = e.features_by_item[mj]
-					} else {
-						b = e.features_by_item[mi]
-						a = e.features_by_item[mj]
-					}
-					for u := range a {
-						_,ok := b[u]
-						if ok {
-							common_cnt += 1
-							v_max = max_u32(u, v_max)
-							if e.use_idf {
-								idf := e.feature_idf[u]
-								common_sum += idf
-								common_sqr += idf*idf
-							}
-						}
-					}
-				}
-
-				// SKETCH intersection estimation
-				common_cnt_raw := common_cnt
-				if e.cfg.sketch_cap>0 && i!=j {
-					common_cnt = estimate_intersection(common_cnt, e.cfg.sketch_cap, mi_cnt, mj_cnt, v_max)
-				}
-								
-				// --- METRICS ---
-				a        := mi_cnt
-				b        := mj_cnt
-				c        := common_cnt
-				cos      := float64(c) / math.Sqrt(float64(a*b))
-				jaccard  := float64(c) / float64(a+b-c)
-				dice     := float64(2*c) / float64(a+b)
-				logdice  := 14.0 + math.Log2(dice)
-				overlap  := float64(c) / float64(min(a,b))
-				lift     := float64(c) / float64(a*b) * float64(all_features_cnt)
-				pmi      := math.Log(lift)
-				npmi     := pmi / -math.Log(float64(c) / float64(all_features_cnt))
-				anpmi    := math.Abs(npmi)
-				wdice    := 0.0
-				wcos     := 0.0
-				woverlap := 0.0
-				wjaccard := 0.0
-				wc       := 0.0
-				if e.use_idf {
-					wcos = common_sqr / math.Sqrt(e.item_idf_sqr[i]*e.item_idf_sqr[j])
-					wdice = 2.0*common_sum / (e.item_idf_sum[i] + e.item_idf_sum[j])
-					woverlap = common_sum / math.Min(e.item_idf_sum[i], e.item_idf_sum[j])
-					wjaccard = common_sum / (e.item_idf_sum[i] + e.item_idf_sum[j] - common_sum)
-					wc = common_sum
-				}
-
-				// --- OUTPUT ---
-				if c < e.cfg.c_min {
-					continue
-				}
-				if j==i && !e.cfg.diagonal {
-					continue
-				}
-				// 
-				format_list := make([][]string,2)
-				format_list[0] = output_fmt // first triangle
-				format_list[1] = other_fmt  // second triangle (not empty only when "-full")
-				for _,format := range format_list {
-					// TODO: col -> inty zamiast stringow, przekodowanie na poczatku programu
-					for k,col := range format {
-						switch col {
-							case "aname"     : fmt.Fprintf(w, "%s", mi)
-							case "bname"     : fmt.Fprintf(w, "%s", mj)
-							case "ai"        : fmt.Fprintf(w, "%d", i)
-							case "bi"        : fmt.Fprintf(w, "%d", j)
-							case "a"         : fmt.Fprintf(w, "%d", a)
-							case "b"         : fmt.Fprintf(w, "%d", b)
-							// symetric
-							case "partition" : fmt.Fprintf(w, "%d", i0)
-							case "c"         : fmt.Fprintf(w, "%d", c)
-							case "craw"      : fmt.Fprintf(w, "%d", common_cnt_raw)
-							case "cos"       : fmt.Fprintf(w, "%f", cos)
-							case "jaccard"   : fmt.Fprintf(w, "%f", jaccard)
-							case "dice"      : fmt.Fprintf(w, "%f", dice)
-							case "overlap"   : fmt.Fprintf(w, "%f", overlap)
-							case "lift"      : fmt.Fprintf(w, "%f", lift)
-							case "pmi"       : fmt.Fprintf(w, "%f", pmi)
-							case "npmi"      : fmt.Fprintf(w, "%f", npmi)
-							case "anpmi"     : fmt.Fprintf(w, "%f", anpmi)
-							case "logdice"   : fmt.Fprintf(w, "%f", logdice)
-							case "wdice"     : fmt.Fprintf(w, "%f", wdice)
-							case "wcos"      : fmt.Fprintf(w, "%f", wcos)
-							case "wjaccard"  : fmt.Fprintf(w, "%f", wjaccard)
-							case "woverlap"  : fmt.Fprintf(w, "%f", woverlap)
-							case "wc"        : fmt.Fprintf(w, "%f", wc)
-						}
-						if k==len(output_fmt)-1 {
-							fmt.Fprint(w,"\n")
-						} else {
-							fmt.Fprint(w,"\t")
-						}
-					}
-				}
+				e.item_item(i,j,w,i0)
 			}
 			pg.Add(1) // progress // TODO: ilosc intersekcji ???
 		}
