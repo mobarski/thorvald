@@ -475,7 +475,12 @@ func (cfg *Cfg) parse_args() {
 		flag.PrintDefaults()
 	}
 	flag.Parse()
-	// TODO walidacja cfg
+	
+	// --- cfg validation ---
+	if cfg.output_path=="" && cfg.workers>1 {
+		fmt.Fprintf(os.Stderr, "cannot output to stdout when workers>1\n")
+		os.Exit(1)
+	}
 	
 	//cfg.rest = flag.Args()
 	n_args := len(os.Args[1:])
