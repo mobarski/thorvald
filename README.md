@@ -21,7 +21,7 @@ i4	u2,u3,u5
 ```
 
 ### Invocation
-```./thorvald -i input.tsv -o output.tsv -ih -oh```
+```thorvald -i input.tsv -o output.tsv -ih -oh```
 
 ### Output file
 ```
@@ -42,10 +42,11 @@ i1	t1,t2	u1,u2,u3,u4,u5,u6,u7
 i2	t1,t3	u1,u3,u5,u7,u9
 i3	t2,t3	u2,u4,u6,u8
 i4	t2,t4	u2,u3,u5
+i5  t2,t3	
 ```
 
-### Invocation
-```./thorvald -i input.tsv -o output.tsv -ih -oh -colf 3 -f ida,idb,wcos,lift```
+### Invocation (collaborative)
+```thorvald -i input.tsv -o output.tsv -ih -oh -colf 3 -f ida,idb,wcos,lift```
 
 ### Output file
 ```
@@ -55,6 +56,23 @@ i1	i3	0.411410	0.964286
 i1	i4	0.338247	1.285714
 i2	i4	0.190264	1.200000
 i3	i4	0.096451	0.750000
+```
+
+### Invocation (content-based)
+```thorvald -i input.tsv -o output.tsv -ih -oh -colf 2 -f ida,idb,wcos```
+
+### Output file
+```
+ida	idb	wcos
+i1	i2	0.848636
+i1	i3	0.094717
+i1	i4	0.032495
+i1	i5	0.094717
+i2	i3	0.446219
+i2	i5	0.446219
+i3	i4	0.054975
+i3	i5	1.000000
+i4	i5	0.054975
 ```
 
 ## Features
@@ -68,51 +86,52 @@ i3	i4	0.096451	0.750000
 
 # CLI options
 
-|       option | info |
-| -----------: | ---- | 
-|        **i** | input path |
-|        **o** | output path prefix (partitions will have .pX suffix) |
-|        **f** | output format, (default: ida,idb,cos) |
-|        **w** | number of workers (default: 1) |
-|       **ih** | input has header |
-|       **oh** | include header in output |
-|       **ph** | include header in each partition |
-|      **buf** | line buffer capacity in MB (default: 10) |
-|     **coli** | column number of item id (1-based) (default: 1) |
-|     **colf** | column number of features (1-based) (default: 2) |
+|       option | info                                                             |
+| -----------: | ---------------------------------------------------------------- | 
+|        **i** | input path                                                       |
+|        **o** | output path prefix (partitions will have .pX suffix)             |
+|        **f** | output format, (default: ida,idb,cos)                            |
+|        **w** | number of workers (default: 1)                                   |
+|        **k** | KMV sketch capacity, 0 for not using sketches (default: 0)       |
+|       **ih** | input has header                                                 |
+|       **oh** | include header in output                                         |
+|       **ph** | include header in each partition                                 |
+|      **buf** | line buffer capacity in MB (default: 10)                         |
+|     **coli** | column number of item id (1-based) (default: 1)                  |
+|     **colf** | column number of features (1-based) (default: 2)                 |
 |     **cmin** | minimum number of common features to show in output (default: 1) |
-|     **diag** | include diagonal in the output |
-|     **full** | include upper and lower triangle in the output |
+|     **diag** | include diagonal in the output                                   |
+|     **full** | include upper and lower triangle in the output                   |
 
 ## Output format
 
-|        option | info |
-| ------------: | ---- |
-|       **ida** | id of item A |
-|       **idb** | id of item B |
-|        **ia** | index of item A |
-|        **ib** | index of item B |
-|         **a** | number of features of item A |
-|         **b** | number of features of item B |
-|         **c** | number of features common to item A and item B |
-|      **araw** | raw number of elements in sketch A (TODO) |
-|      **braw** | raw number of elements in sketch B (TODO) |
+|        option | info                                                     |
+| ------------: | -------------------------------------------------------- |
+|       **ida** | id of item A                                             |
+|       **idb** | id of item B                                             |
+|        **ia** | index of item A                                          |
+|        **ib** | index of item B                                          |
+|         **a** | number of features of item A                             |
+|         **b** | number of features of item B                             |
+|         **c** | number of features common to item A and item B           |
+|      **araw** | raw number of elements in sketch A (TODO)                |
+|      **braw** | raw number of elements in sketch B (TODO)                |
 |      **craw** | raw number of elements in intersection of sketch A and B |
-|       **cos** | cosine similarity |
-|      **dice** | Sørensen–Dice index |
-|   **logdice** | logDice score |
-|   **jaccard** | Jaccard index |
-|   **overlap** | overlap |
-|      **lift** | lift |
-|       **pmi** | PMI - Pointwise Mutual Information |
-|      **npmi** | NPMI - Normalized Pointwise Mutual Information |
-|     **anpmi** | absolute NPMI |
-|        **wc** | IDF weighted common features of A and B |
-|      **wcos** | IDF weighted cosine similarity |
-|     **wdice** | IDF weighted Sørensen–Dice index |
-|  **wjaccard** | IDF weighted Jaccard index |
-|  **woverlap** | IDF weighted overlap |
-| **partition** | partition/worker ID  |
+|       **cos** | cosine similarity                                        |
+|      **dice** | Sørensen–Dice index                                      |
+|   **logdice** | logDice score                                            |
+|   **jaccard** | Jaccard index                                            |
+|   **overlap** | overlap                                                  |
+|      **lift** | lift                                                     |
+|       **pmi** | PMI - Pointwise Mutual Information                       |
+|      **npmi** | NPMI - Normalized Pointwise Mutual Information           |
+|     **anpmi** | absolute NPMI                                            |
+|        **wc** | IDF weighted common features of A and B                  |
+|      **wcos** | IDF weighted cosine similarity                           |
+|     **wdice** | IDF weighted Sørensen–Dice index                         |
+|  **wjaccard** | IDF weighted Jaccard index                               |
+|  **woverlap** | IDF weighted overlap                                     |
+| **partition** | partition/worker ID                                      |
 
 # Performance
 
@@ -123,10 +142,10 @@ TODO
 - output only top N items
 - item-item combinations reduction via item features
 - stdin / stdout support
-- context
 - sketch output (+ early exit)
 - sketch input
 - sketch delta update
+- context
 - distributed processing support
 
 [//]: # (online .md editor: https://markdown-editor.github.io/ )
