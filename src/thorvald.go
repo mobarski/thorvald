@@ -136,6 +136,7 @@ type Cfg struct {
 
 
 type Engine struct {
+	cfg              Cfg
 	features_by_item map[string]map[uint32]bool
 	range_by_item    map[string]int
 	all_features     map[uint32]bool
@@ -147,7 +148,6 @@ type Engine struct {
 	items            []string
 	output_fmt       []string
 	other_fmt        []string
-	cfg              Cfg
 	use_idf          bool
 	items_cnt        int
 	all_features_cnt int
@@ -341,6 +341,7 @@ func (e *Engine) item_item(i int, j int, w io.Writer, partition int) {
 		return
 	}
 	// 
+	ffmt := "%.4f"
 	format_list := make([][]string,2)
 	format_list[0] = e.output_fmt // first triangle
 	format_list[1] = e.other_fmt  // second triangle (not empty only when "-full")
@@ -356,22 +357,22 @@ func (e *Engine) item_item(i int, j int, w io.Writer, partition int) {
 				case "b"         : fmt.Fprintf(w, "%d", b)
 				// symetric
 				case "partition" : fmt.Fprintf(w, "%d", partition)
+				case "wcos"      : fmt.Fprintf(w, ffmt, wcos)
+				case "cos"       : fmt.Fprintf(w, ffmt, cos)
 				case "c"         : fmt.Fprintf(w, "%d", c)
 				case "craw"      : fmt.Fprintf(w, "%d", common_cnt_raw)
-				case "cos"       : fmt.Fprintf(w, "%f", cos)
-				case "jaccard"   : fmt.Fprintf(w, "%f", jaccard)
-				case "dice"      : fmt.Fprintf(w, "%f", dice)
-				case "overlap"   : fmt.Fprintf(w, "%f", overlap)
-				case "lift"      : fmt.Fprintf(w, "%f", lift)
-				case "pmi"       : fmt.Fprintf(w, "%f", pmi)
-				case "npmi"      : fmt.Fprintf(w, "%f", npmi)
-				case "anpmi"     : fmt.Fprintf(w, "%f", anpmi)
-				case "logdice"   : fmt.Fprintf(w, "%f", logdice)
-				case "wdice"     : fmt.Fprintf(w, "%f", wdice)
-				case "wcos"      : fmt.Fprintf(w, "%f", wcos)
-				case "wjaccard"  : fmt.Fprintf(w, "%f", wjaccard)
-				case "woverlap"  : fmt.Fprintf(w, "%f", woverlap)
-				case "wc"        : fmt.Fprintf(w, "%f", wc)
+				case "jaccard"   : fmt.Fprintf(w, ffmt, jaccard)
+				case "dice"      : fmt.Fprintf(w, ffmt, dice)
+				case "overlap"   : fmt.Fprintf(w, ffmt, overlap)
+				case "lift"      : fmt.Fprintf(w, ffmt, lift)
+				case "pmi"       : fmt.Fprintf(w, ffmt, pmi)
+				case "npmi"      : fmt.Fprintf(w, ffmt, npmi)
+				case "anpmi"     : fmt.Fprintf(w, ffmt, anpmi)
+				case "logdice"   : fmt.Fprintf(w, ffmt, logdice)
+				case "wdice"     : fmt.Fprintf(w, ffmt, wdice)
+				case "wjaccard"  : fmt.Fprintf(w, ffmt, wjaccard)
+				case "woverlap"  : fmt.Fprintf(w, ffmt, woverlap)
+				case "wc"        : fmt.Fprintf(w, ffmt, wc)
 			}
 			if k==len(e.output_fmt)-1 {
 				fmt.Fprint(w,"\n")
