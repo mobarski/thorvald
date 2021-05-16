@@ -478,7 +478,7 @@ func (cfg *Cfg) parse_args() {
 	
 	// --- cfg validation ---
 	if cfg.output_path=="" && cfg.workers>1 {
-		fmt.Fprintf(os.Stderr, "cannot output to stdout when workers>1\n")
+		fmt.Fprintf(os.Stderr, "ERROR: cannot output to stdout when workers>1\n")
 		os.Exit(1)
 	}
 	
