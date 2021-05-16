@@ -42,7 +42,7 @@ i1	t1,t2	u1,u2,u3,u4,u5,u6,u7
 i2	t1,t3	u1,u3,u5,u7,u9
 i3	t2,t3	u2,u4,u6,u8
 i4	t2,t4	u2,u3,u5
-i5  t2,t3	
+i5	t2,t3	
 ```
 
 ### Invocation (collaborative)
