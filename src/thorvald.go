@@ -221,6 +221,12 @@ func (e *Engine) load() {
 	// fo.Close()
 	file.Close()
 	pg.Close()
+	
+	err = scanner.Err()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: reading input failed (%v)\n", err)
+		os.Exit(1)
+	}
 
 	//fmt.Printf("items[1] features cnt %d\n",len(e.features_by_item["f1"])) // XXX 
 	//fmt.Printf("items[2] features cnt %d\n",len(e.features_by_item["f2"])) // XXX
@@ -462,7 +468,7 @@ func (cfg *Cfg) parse_args() {
 	flag.BoolVar(&cfg.diagonal,  "diag", false, "include diagonal in output")
 	flag.BoolVar(&cfg.full,      "full", false, "full output (including diagonal and lower triangle) (TODO)")
 	
-	flag.IntVar(&cfg.buf_cap,      "buf",   10, "line buffer capacity in MB")
+	flag.IntVar(&cfg.buf_cap,      "buf",  100, "line buffer capacity in MB")
 	flag.IntVar(&cfg.item_col,     "coli",   1, "1-based column number of item name")
 	flag.IntVar(&cfg.features_col, "colf",   2, "1-based column number of features")
 	flag.IntVar(&cfg.c_min,        "cmin",   1, "minimum number of common features to show in output")
