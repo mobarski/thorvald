@@ -141,10 +141,7 @@ TODO
 
 - output only top N items
 - item-item combinations reduction via item features
-- stdin / stdout support
-- sketch output (+ early exit)
-- sketch input
-- sketch delta update
+- sketch input / output / merge
 - context
 - distributed processing support
 
