@@ -89,13 +89,12 @@ i4	i5	0.0550
 |       option | info                                                             |
 | -----------: | ---------------------------------------------------------------- | 
 |        **i** | input path                                                       |
-|        **o** | output path prefix (partitions will have .pX suffix)             |
+|        **o** | output path (default: stdout)                                    |
 |        **f** | output format, (default: ida,idb,cos)                            |
 |        **w** | number of workers (default: 1)                                   |
 |        **k** | KMV sketch capacity, 0 for not using sketches (default: 0)       |
 |       **ih** | input has header                                                 |
 |       **oh** | include header in output                                         |
-|       **ph** | include header in each partition                                 |
 |      **buf** | line buffer capacity in MB (default: 100)                        |
 |     **coli** | column number of item id (1-based) (default: 1)                  |
 |     **colf** | column number of features (1-based) (default: 2)                 |

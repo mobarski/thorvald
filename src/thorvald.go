@@ -6,7 +6,7 @@ package main
 import (
     "bufio"
     "fmt"
-    //"log"
+    "log"
     "os"
 	"time"
 	"strings"
@@ -15,7 +15,7 @@ import (
 	"sync"
 	"math"
 	"flag"
-	"io"
+	//"io"
 	//"runtime"
 	"sync/atomic" // atomic.AddUint32(v, 1) <- (v *uint32)
 )
@@ -127,7 +127,6 @@ type Cfg struct {
 	c_min       int
 	header_in   bool
 	header_out  bool
-	header_part bool
 	diagonal    bool
 	full        bool
 }
@@ -151,6 +150,7 @@ type Engine struct {
 	use_idf          bool
 	items_cnt        int
 	all_features_cnt int
+	output           *log.Logger // handles concurrent writes
 }
 
 
@@ -270,7 +270,13 @@ func (e *Engine) calc_idf() {
 }
 
 
-func (e *Engine) item_item(i int, j int, w io.Writer, partition int) {
+// TODO: String()
+type record struct {
+	val	float32
+	str	string
+}
+
+func (e *Engine) item_item(i int, j int, partition int) (out [2]record) {
 	mi := e.items[i]
 	mj := e.items[j]
 	mi_cnt := e.range_by_item[mi] // exact value - not from sketch
@@ -312,7 +318,7 @@ func (e *Engine) item_item(i int, j int, w io.Writer, partition int) {
 	if e.cfg.sketch_cap>0 && i!=j {
 		common_cnt = estimate_intersection(common_cnt, e.cfg.sketch_cap, mi_cnt, mj_cnt, v_max)
 	}
-					
+	
 	// --- METRICS ---
 	a        := mi_cnt
 	b        := mj_cnt
@@ -346,88 +352,74 @@ func (e *Engine) item_item(i int, j int, w io.Writer, partition int) {
 	if j==i && !e.cfg.diagonal {
 		return
 	}
-	// 
+	//
 	ffmt := "%.4f"
 	format_list := make([][]string,2)
 	format_list[0] = e.output_fmt // first triangle
 	format_list[1] = e.other_fmt  // second triangle (not empty only when "-full")
-	for _,format := range format_list {
+	for r,format := range format_list {
+		columns := make([]string, len(format))
 		// TODO: col -> inty zamiast stringow, przekodowanie na poczatku programu
 		for k,col := range format {
 			switch col {
-				case "ida"       : fmt.Fprintf(w, "%s", mi)
-				case "idb"       : fmt.Fprintf(w, "%s", mj)
-				case "ia"        : fmt.Fprintf(w, "%d", i)
-				case "ib"        : fmt.Fprintf(w, "%d", j)
-				case "a"         : fmt.Fprintf(w, "%d", a)
-				case "b"         : fmt.Fprintf(w, "%d", b)
+				case "ida"       : columns[k] = fmt.Sprintf("%s", mi)
+				case "idb"       : columns[k] = fmt.Sprintf("%s", mj)
+				case "ia"        : columns[k] = fmt.Sprintf("%d", i)
+				case "ib"        : columns[k] = fmt.Sprintf("%d", j)
+				case "a"         : columns[k] = fmt.Sprintf("%d", a)
+				case "b"         : columns[k] = fmt.Sprintf("%d", b)
 				// symetric
-				case "partition" : fmt.Fprintf(w, "%d", partition)
-				case "wcos"      : fmt.Fprintf(w, ffmt, wcos)
-				case "cos"       : fmt.Fprintf(w, ffmt, cos)
-				case "c"         : fmt.Fprintf(w, "%d", c)
-				case "craw"      : fmt.Fprintf(w, "%d", common_cnt_raw)
-				case "jaccard"   : fmt.Fprintf(w, ffmt, jaccard)
-				case "dice"      : fmt.Fprintf(w, ffmt, dice)
-				case "overlap"   : fmt.Fprintf(w, ffmt, overlap)
-				case "lift"      : fmt.Fprintf(w, ffmt, lift)
-				case "pmi"       : fmt.Fprintf(w, ffmt, pmi)
-				case "npmi"      : fmt.Fprintf(w, ffmt, npmi)
-				case "anpmi"     : fmt.Fprintf(w, ffmt, anpmi)
-				case "logdice"   : fmt.Fprintf(w, ffmt, logdice)
-				case "wdice"     : fmt.Fprintf(w, ffmt, wdice)
-				case "wjaccard"  : fmt.Fprintf(w, ffmt, wjaccard)
-				case "woverlap"  : fmt.Fprintf(w, ffmt, woverlap)
-				case "wc"        : fmt.Fprintf(w, ffmt, wc)
-			}
-			if k==len(e.output_fmt)-1 {
-				fmt.Fprint(w,"\n")
-			} else {
-				fmt.Fprint(w,"\t")
+				case "partition" : columns[k] = fmt.Sprintf("%d", partition)
+				case "wcos"      : columns[k] = fmt.Sprintf(ffmt, wcos)
+				case "cos"       : columns[k] = fmt.Sprintf(ffmt, cos)
+				case "c"         : columns[k] = fmt.Sprintf("%d", c)
+				case "craw"      : columns[k] = fmt.Sprintf("%d", common_cnt_raw)
+				case "jaccard"   : columns[k] = fmt.Sprintf(ffmt, jaccard)
+				case "dice"      : columns[k] = fmt.Sprintf(ffmt, dice)
+				case "overlap"   : columns[k] = fmt.Sprintf(ffmt, overlap)
+				case "lift"      : columns[k] = fmt.Sprintf(ffmt, lift)
+				case "pmi"       : columns[k] = fmt.Sprintf(ffmt, pmi)
+				case "npmi"      : columns[k] = fmt.Sprintf(ffmt, npmi)
+				case "anpmi"     : columns[k] = fmt.Sprintf(ffmt, anpmi)
+				case "logdice"   : columns[k] = fmt.Sprintf(ffmt, logdice)
+				case "wdice"     : columns[k] = fmt.Sprintf(ffmt, wdice)
+				case "wjaccard"  : columns[k] = fmt.Sprintf(ffmt, wjaccard)
+				case "woverlap"  : columns[k] = fmt.Sprintf(ffmt, woverlap)
+				case "wc"        : columns[k] = fmt.Sprintf(ffmt, wc)
 			}
 		}
+		out[r].val = 1.2 // TODO: value for top N sorting (default: first metric)
+		out[r].str = strings.Join(columns, "\t")
 	}
+	return out
 }
 
 
 func (e *Engine) calc_similarity() {
-	e.output_fmt = strings.Split(e.cfg.output_fmt, ",")
 	e.all_features_cnt = len(e.all_features)
 	
 	pg := Progress(e.items_cnt,"CALC","items")
 	var wg sync.WaitGroup
 	f := func(i0,ii int) {
-		filename := e.cfg.output_path
-		if e.cfg.workers>=2 {
-			filename += fmt.Sprintf(".p%d",i0+1)
-		}
-		fo := os.Stdout
-		if len(e.cfg.output_path)>0 {
-			fo2,err := os.Create(filename)
-			check(err)
-			fo = fo2
-		}
-		w := bufio.NewWriter(fo)
 		// other triangle format string (swaped asymetrical columns)
 		e.other_fmt = make([]string,0)
 		if e.cfg.full {
 			e.other_fmt = other_triangle_format(e.output_fmt)
 		}
-		// output header
-		if e.cfg.header_part || e.cfg.header_out && i0==0 {
-			header := strings.Join(e.output_fmt,"\t")
-			fmt.Fprintf(w, "%s\n", header)
-		}
 		// item-item loop
 		for i:=i0; i<e.items_cnt; i+=ii {
 			j0 := i // will be 0 when output will be reduced to top X only
 			for j:=j0; j<e.items_cnt; j++ {
-				e.item_item(i,j,w,i0)
+				records := e.item_item(i,j,i0)
+				if records[0].str!="" {
+					e.output.Println(records[0].str)
+				}
+				if records[1].str!="" {
+					e.output.Println(records[1].str)
+				}
 			}
 			pg.Add(1) // progress // TODO: ilosc intersekcji ???
 		}
-		w.Flush()
-		fo.Close()
 		wg.Done()
 	}
 	
@@ -447,7 +439,25 @@ func (e *Engine) main() {
 	e.range_by_item = make(map[string]int)
 	e.all_features = make(map[uint32]bool)
 	e.feature_freq = make(map[uint32]int)
+	
+	// open output
+	filename := e.cfg.output_path
+	fo := os.Stdout
+	if len(e.cfg.output_path)>0 {
+		fo2,err := os.Create(filename)
+		check(err)
+		fo = fo2
+	}
+	e.output = log.New(fo, "", 0)
 
+	// output header
+	e.output_fmt = strings.Split(e.cfg.output_fmt, ",")
+	if e.cfg.header_out {
+		header := strings.Join(e.output_fmt,"\t")
+		e.output.Println(header)
+	}
+
+	// core
 	e.load()
 	e.calc_idf()
 	e.calc_similarity()
@@ -458,12 +468,11 @@ func (e *Engine) main() {
 
 func (cfg *Cfg) parse_args() {
 	flag.StringVar(&cfg.input_path,  "i",   "", "input path")
-	flag.StringVar(&cfg.output_path, "o",   "", "output path prefix (partitions will have .pX suffix)")
+	flag.StringVar(&cfg.output_path, "o",   "", "output path")
 	flag.StringVar(&cfg.output_fmt,  "f",   "ida,idb,cos", "output format")
 	
 	flag.BoolVar(&cfg.header_in,   "ih", false, "input header")
 	flag.BoolVar(&cfg.header_out,  "oh", false, "output header")
-	flag.BoolVar(&cfg.header_part, "ph", false, "partition header")
 	
 	flag.BoolVar(&cfg.diagonal,  "diag", false, "include diagonal in output")
 	flag.BoolVar(&cfg.full,      "full", false, "full output (including diagonal and lower triangle) (TODO)")
@@ -477,7 +486,7 @@ func (cfg *Cfg) parse_args() {
 	
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of this program:\n")
-		fmt.Fprintf(os.Stderr, "./thorvald -i input.tsv -o output.tsv\n\n")
+		fmt.Fprintf(os.Stderr, "./thorvald -i input.tsv\n\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
