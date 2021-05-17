@@ -96,7 +96,7 @@ i4	i5	0.0550
 |       **ih** | input has header                                                 |
 |       **oh** | include header in output                                         |
 |       **ph** | include header in each partition                                 |
-|      **buf** | line buffer capacity in MB (default: 10)                         |
+|      **buf** | line buffer capacity in MB (default: 100)                        |
 |     **coli** | column number of item id (1-based) (default: 1)                  |
 |     **colf** | column number of features (1-based) (default: 2)                 |
 |     **cmin** | minimum number of common features to show in output (default: 1) |
