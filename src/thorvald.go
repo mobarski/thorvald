@@ -18,6 +18,7 @@ import (
 	//"io"
 	//"runtime"
 	"sync/atomic" // atomic.AddUint32(v, 1) <- (v *uint32)
+	"strconv"
 )
 
 func min(x, y int) int {
@@ -122,6 +123,7 @@ type Cfg struct {
 	sketch_cap  int
 	item_col    int
 	top_n       int
+	top_col     int
 	features_col   int
 	output_fmt  string
 	workers     int
@@ -389,7 +391,12 @@ func (e *Engine) item_item(i int, j int, partition int) (out [2]record) {
 				case "wc"        : columns[k] = fmt.Sprintf(ffmt, wc)
 			}
 		}
-		out[r].val = 1.2 // TODO: value for top N sorting (default: first metric)
+		if e.cfg.top_n>0 && len(format)>0 {
+			val_as_str := columns[e.cfg.top_col-1]
+			val,err := strconv.ParseFloat(val_as_str, 32)
+			check(err)
+			out[r].val = float32(val)
+		}
 		out[r].str = strings.Join(columns, "\t")
 	}
 	return out
@@ -404,13 +411,17 @@ func (e *Engine) calc_similarity() {
 	f := func(i0,ii int) {
 		// other triangle format string (swaped asymetrical columns)
 		e.other_fmt = make([]string,0)
-		if e.cfg.full {
+		if e.cfg.full && e.cfg.top_n==0 {
 			e.other_fmt = other_triangle_format(e.output_fmt)
 		}
 		
 		// item-item loop
 		for i:=i0; i<e.items_cnt; i+=ii {
-			j0 := i // will be 0 when output will be reduced to top X only
+			j0 := 0
+			if e.cfg.top_n>0 {
+			} else {
+				j0 = i
+			}
 			r := 0 // record index
 			records := make([]record, 2*e.items_cnt)
 			for j:=j0; j<e.items_cnt; j++ {
@@ -505,6 +516,8 @@ func (cfg *Cfg) parse_args() {
 	flag.IntVar(&cfg.c_min,        "cmin",   1, "minimum number of common features to show in output")
 	flag.IntVar(&cfg.workers,      "w",      1, "number of workers")
 	flag.IntVar(&cfg.sketch_cap,   "k",      0, "KMV sketch capacity, zero for no KMV usage")
+	flag.IntVar(&cfg.top_n,        "topn",   0, "output only top N results, 0 for all results")
+	flag.IntVar(&cfg.top_col,      "topcol", 3, "1-based output column number for top N selection")
 	
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of this program:\n")

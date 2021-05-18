@@ -95,6 +95,8 @@ i4	i5	0.0550
 |        **k** | KMV sketch capacity, 0 for not using sketches (default: 0)       |
 |       **ih** | input has header                                                 |
 |       **oh** | include header in output                                         |
+|     **topn** | output only top N results, 0 for all results (default: 0)        |
+|   **topcol** | output column number for top N selection (1-based) (default: 3)  |
 |      **buf** | line buffer capacity in MB (default: 100)                        |
 |     **coli** | column number of item id (1-based) (default: 1)                  |
 |     **colf** | column number of features (1-based) (default: 2)                 |
