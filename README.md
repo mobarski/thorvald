@@ -84,6 +84,7 @@ i4	i5	0.0550
 - ability to limit output to top N items
 - easy deployment: single, statically-linked executable
 - easy build process: `go build thorvald.go`
+- [unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy)
 
 # CLI options
 
