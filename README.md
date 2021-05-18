@@ -81,6 +81,7 @@ i4	i5	0.0550
 - IDF-like weighting of features (both content-based and user-based)
 - parallel processing
 - KMV sketch-based acceleration
+- ability to limit output to top N items
 - easy deployment: single, statically-linked executable
 - easy build process: `go build thorvald.go`
 
@@ -140,7 +141,6 @@ TODO
 
 # Planed features
 
-- output only top N items
 - item-item combinations reduction via item features
 - sketch input / output / merge
 - context
