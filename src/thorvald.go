@@ -121,6 +121,7 @@ type Cfg struct {
 	buf_cap     int
 	sketch_cap  int
 	item_col    int
+	top_n       int
 	features_col   int
 	output_fmt  string
 	workers     int
@@ -406,18 +407,39 @@ func (e *Engine) calc_similarity() {
 		if e.cfg.full {
 			e.other_fmt = other_triangle_format(e.output_fmt)
 		}
+		
 		// item-item loop
 		for i:=i0; i<e.items_cnt; i+=ii {
 			j0 := i // will be 0 when output will be reduced to top X only
+			r := 0 // record index
+			records := make([]record, 2*e.items_cnt)
 			for j:=j0; j<e.items_cnt; j++ {
-				records := e.item_item(i,j,i0)
-				if records[0].str!="" {
-					e.output.Println(records[0].str)
+				rec := e.item_item(i,j,i0)
+				if rec[0].str!="" {
+					records[r] = rec[0]
+					r++
 				}
-				if records[1].str!="" {
-					e.output.Println(records[1].str)
+				if rec[1].str!="" {
+					records[r] = rec[1]
+					r++
 				}
 			}
+			
+			// limit the results to top N
+			if e.cfg.top_n>0 {
+				sort.Slice(records[:r], func(ri,rj int) bool {
+					return records[ri].val > records[rj].val
+				})
+				r = min(e.cfg.top_n, r)
+			}
+			
+			// output
+			records_str := make([]string, r)
+			for j:=0; j<r; j++ {
+				records_str[j] = records[j].str
+			}
+			e.output.Println(strings.Join(records_str, "\n"))
+			
 			pg.Add(1) // progress // TODO: ilosc intersekcji ???
 		}
 		wg.Done()
