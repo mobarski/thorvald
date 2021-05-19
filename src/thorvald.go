@@ -76,7 +76,7 @@ func (p *progress) Add(x int) {
 	elapsed := time.Since(p.t0)
 	rate := float64(p.done) / elapsed.Seconds()
 	if p.total>0 {
-		done_pct := float64(p.done) / float64(p.total) * 100
+		done_pct := math.Floor(float64(p.done) / float64(p.total) * 100)
 		//fmt.Fprintf(os.Stderr, "\r%s: %d / %d %s (%.f%%) -> %.1fs (%.1f %s/s)", p.label, p.done, p.total, p.unit, done_pct, elapsed.Seconds(), rate, p.unit)
 		fmt.Fprintf(os.Stderr, "\r%s: %d %s -> %.1fs (%.1f %s/s) -> %.f%% done ", p.label, p.done, p.unit, elapsed.Seconds(), rate, p.unit, done_pct)
 	} else {
@@ -258,7 +258,7 @@ func (e *Engine) load() {
 
 
 func (e *Engine) calc_idf() {
-	e.use_idf = contains(e.output_fmt, []string{"wcos","wc","wdice","wjaccard","woverlap"})
+	e.use_idf = contains(e.output_fmt, []string{"wcos","wc","wdice","wjaccard","woverlap","wa","wb","wlift","wpmi","wnpmi"})
 	
 	e.feature_idf  = make(map[uint32]float64, len(e.feature_freq))
 	e.item_idf_sum = make([]float64,len(e.items))
