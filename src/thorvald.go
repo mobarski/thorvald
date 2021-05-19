@@ -30,6 +30,13 @@ func min(x, y int) int {
     return y
 }
 
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
 func max_u32(x, y uint32) uint32 {
     if x < y {
         return y
@@ -437,7 +444,7 @@ func (e *Engine) item_item(i int, j int, partition int) (out [2]record) {
 				case "wlogdice"  : columns[k] = fmt.Sprintf(ffmt, wlogdice)
 			}
 		}
-		if e.cfg.top_n>0 && len(format)>0 {
+		if e.cfg.top_n!=0 && len(format)>0 {
 			val_as_str := columns[e.cfg.top_col-1]
 			val,err := strconv.ParseFloat(val_as_str, 32)
 			check(err)
@@ -464,8 +471,7 @@ func (e *Engine) calc_similarity() {
 		// item-item loop
 		for i:=i0; i<e.items_cnt; i+=ii {
 			j0 := 0
-			if e.cfg.top_n>0 {
-			} else {
+			if e.cfg.top_n==0 {
 				j0 = i
 			}
 			r := 0 // record index
@@ -488,6 +494,12 @@ func (e *Engine) calc_similarity() {
 					return records[ri].val > records[rj].val
 				})
 				r = min(e.cfg.top_n, r)
+			// limit the results to bot N
+			} else if e.cfg.top_n<0 {
+				sort.Slice(records[:r], func(ri,rj int) bool {
+					return records[ri].val < records[rj].val
+				})
+				r = min(abs(e.cfg.top_n), r)
 			}
 			
 			// output
@@ -562,7 +574,7 @@ func (cfg *Cfg) parse_args() {
 	flag.IntVar(&cfg.c_min,        "cmin",   1, "minimum number of common features to show in output")
 	flag.IntVar(&cfg.workers,      "w",      1, "number of workers")
 	flag.IntVar(&cfg.sketch_cap,   "k",      0, "KMV sketch capacity, zero for no KMV usage")
-	flag.IntVar(&cfg.top_n,        "topn",   0, "output only top N results, 0 for all results")
+	flag.IntVar(&cfg.top_n,        "topn",   0, "output only top N results, 0 for all results, negative for bottom N results")
 	flag.IntVar(&cfg.top_col,      "topcol", 3, "1-based output column number for top N selection")
 	
 	flag.Usage = func() {
