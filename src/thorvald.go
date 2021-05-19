@@ -21,6 +21,8 @@ import (
 	"strconv"
 )
 
+// --- UTILS ---
+
 func min(x, y int) int {
     if x < y {
         return x
@@ -33,6 +35,26 @@ func max_u32(x, y uint32) uint32 {
         return y
     }
     return x
+}
+
+func press_enter(msg string) {
+	fmt.Fprintln(os.Stderr, msg)
+	var x string; fmt.Scanf("%s",&x)
+}
+
+func check(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func contains(a,b []string) bool {
+	for _,x := range a {
+		for _,y := range b {
+			if x==y { return true }
+		}
+	}
+	return false
 }
 
 // --- PROGRESS ---
@@ -87,10 +109,7 @@ func estimate_intersection(sketch_len int, sketch_cap int, a_cnt int, b_cnt int,
 	}
 }
 
-func press_enter(msg string) {
-	fmt.Fprintln(os.Stderr, msg)
-	var x string; fmt.Scanf("%s",&x)
-}
+// ---
 
 
 func other_triangle_format(fmt []string) []string {
@@ -109,12 +128,6 @@ func other_triangle_format(fmt []string) []string {
 	return out
 }
 
-
-func check(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
 
 type Cfg struct {
 	input_path  string
@@ -245,7 +258,7 @@ func (e *Engine) load() {
 
 
 func (e *Engine) calc_idf() {
-	e.use_idf = true // TODO: only when weighted metric in output_fmt -> 12% better performance of item-item similarity
+	e.use_idf = contains(e.output_fmt, []string{"wcos","wc","wdice","wjaccard","woverlap"})
 	
 	e.feature_idf  = make(map[uint32]float64, len(e.feature_freq))
 	e.item_idf_sum = make([]float64,len(e.items))
