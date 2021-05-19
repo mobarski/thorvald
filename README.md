@@ -81,7 +81,7 @@ i4	i5	0.0550
 - IDF-like weighting of features (both content-based and user-based)
 - parallel processing
 - KMV sketch-based acceleration
-- ability to limit output to top N items
+- ability to limit output to top/bottom N items
 - easy deployment: single, statically-linked executable
 - easy build process: `go build thorvald.go`
 - [unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy)
