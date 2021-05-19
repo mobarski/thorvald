@@ -129,11 +129,17 @@ i4	i5	0.0550
 |       **pmi** | PMI - Pointwise Mutual Information                       |
 |      **npmi** | NPMI - Normalized Pointwise Mutual Information           |
 |     **anpmi** | absolute NPMI                                            |
+|        **wa** | IDF weighted features of A                               |
+|        **wa** | IDF weighted features of B                               |
 |        **wc** | IDF weighted common features of A and B                  |
 |      **wcos** | IDF weighted cosine similarity                           |
 |     **wdice** | IDF weighted Sørensen–Dice index                         |
 |  **wjaccard** | IDF weighted Jaccard index                               |
 |  **woverlap** | IDF weighted overlap                                     |
+|     **wlift** | IDF weighted lift                                        |
+|      **wpmi** | IDF weighted PMI                                         |
+|     **wnpmi** | IDF weighted NPMI                                        |
+|  **wlogdice** | IDF weighted logDice                                     |
 | **partition** | partition/worker ID                                      |
 
 # Performance

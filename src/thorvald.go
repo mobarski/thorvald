@@ -159,6 +159,8 @@ type Engine struct {
 	feature_idf      map[uint32]float64
 	item_idf_sum     []float64
 	item_idf_sqr     []float64
+	all_idf_sum      float64
+	all_idf_sqr      float64
 	buf              []byte
 	items            []string
 	output_fmt       []string
@@ -258,7 +260,7 @@ func (e *Engine) load() {
 
 
 func (e *Engine) calc_idf() {
-	e.use_idf = contains(e.output_fmt, []string{"wcos","wc","wdice","wjaccard","woverlap","wa","wb","wlift","wpmi","wnpmi"})
+	e.use_idf = contains(e.output_fmt, []string{"wcos","wc","wdice","wjaccard","woverlap","wa","wb","wlift","wpmi","wnpmi","wlogdice"})
 	
 	e.feature_idf  = make(map[uint32]float64, len(e.feature_freq))
 	e.item_idf_sum = make([]float64,len(e.items))
@@ -282,6 +284,16 @@ func (e *Engine) calc_idf() {
 			pg.Add(1)
 		}
 		pg.Close()
+		//
+		sum := 0.0
+		sqr := 0.0
+		for u := range e.all_features {
+			idf := e.feature_idf[u]
+			sum += idf
+			sqr += idf*idf
+		}
+		e.all_idf_sum = sum
+		e.all_idf_sqr = sqr
 	}
 }
 
@@ -339,26 +351,41 @@ func (e *Engine) item_item(i int, j int, partition int) (out [2]record) {
 	a        := mi_cnt
 	b        := mj_cnt
 	c        := common_cnt
+	all      := e.all_features_cnt
 	cos      := float64(c) / math.Sqrt(float64(a*b))
 	jaccard  := float64(c) / float64(a+b-c)
 	dice     := float64(2*c) / float64(a+b)
 	logdice  := 14.0 + math.Log2(dice)
 	overlap  := float64(c) / float64(min(a,b))
-	lift     := float64(c) / float64(a*b) * float64(e.all_features_cnt)
+	lift     := float64(c) / float64(a*b) * float64(all)
 	pmi      := math.Log(lift)
-	npmi     := pmi / -math.Log(float64(c) / float64(e.all_features_cnt))
+	npmi     := pmi / -math.Log(float64(c) / float64(all))
 	anpmi    := math.Abs(npmi)
 	wdice    := 0.0
 	wcos     := 0.0
 	woverlap := 0.0
 	wjaccard := 0.0
+	wlogdice := 0.0
+	wa       := 0.0
+	wb       := 0.0
 	wc       := 0.0
+	wall     := 0.0
+	wlift    := 0.0
+	wpmi     := 0.0
+	wnpmi    := 0.0
 	if e.use_idf {
-		wcos = common_sqr / math.Sqrt(e.item_idf_sqr[i]*e.item_idf_sqr[j])
-		wdice = 2.0*common_sum / (e.item_idf_sum[i] + e.item_idf_sum[j])
-		woverlap = common_sum / math.Min(e.item_idf_sum[i], e.item_idf_sum[j])
-		wjaccard = common_sum / (e.item_idf_sum[i] + e.item_idf_sum[j] - common_sum)
+		wa = e.item_idf_sum[i]
+		wb = e.item_idf_sum[j]
 		wc = common_sum
+		wall = e.all_idf_sum
+		wcos = common_sqr / math.Sqrt(e.item_idf_sqr[i] * e.item_idf_sqr[j])
+		wdice = 2.0*wc / (wa + wb)
+		woverlap = wc / math.Min(wa, wb)
+		wjaccard = wc / (wa + wb - wc)
+		wlift = wc / (wa*wb) * wall
+		wpmi = math.Log(wlift)
+		wnpmi = wpmi / -math.Log(wc / wall)
+		wlogdice = 14.0 + math.Log2(wdice)
 	}
 
 	// --- OUTPUT ---
@@ -401,7 +428,13 @@ func (e *Engine) item_item(i int, j int, partition int) (out [2]record) {
 				case "wdice"     : columns[k] = fmt.Sprintf(ffmt, wdice)
 				case "wjaccard"  : columns[k] = fmt.Sprintf(ffmt, wjaccard)
 				case "woverlap"  : columns[k] = fmt.Sprintf(ffmt, woverlap)
+				case "wa"        : columns[k] = fmt.Sprintf(ffmt, wa)
+				case "wb"        : columns[k] = fmt.Sprintf(ffmt, wb)
 				case "wc"        : columns[k] = fmt.Sprintf(ffmt, wc)
+				case "wlift"     : columns[k] = fmt.Sprintf(ffmt, wlift)
+				case "wpmi"      : columns[k] = fmt.Sprintf(ffmt, wpmi)
+				case "wnpmi"     : columns[k] = fmt.Sprintf(ffmt, wnpmi)
+				case "wlogdice"  : columns[k] = fmt.Sprintf(ffmt, wlogdice)
 			}
 		}
 		if e.cfg.top_n>0 && len(format)>0 {
