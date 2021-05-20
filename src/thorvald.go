@@ -4,10 +4,10 @@
 package main
   
 import (
-    "bufio"
-    "fmt"
-    "log"
-    "os"
+	"bufio"
+	"fmt"
+	"log"
+	"os"
 	"time"
 	"strings"
 	"hash/crc32"
@@ -365,6 +365,7 @@ func (e *Engine) item_item(i int, j int, partition int) (out [2]record) {
 	logdice  := 14.0 + math.Log2(dice)
 	overlap  := float64(c) / float64(min(a,b))
 	lift     := float64(c) / float64(a*b) * float64(all)
+	ilift    := float64(a*b) / float64(all) / math.Max(0.5, float64(c))
 	pmi      := math.Log(lift)
 	npmi     := pmi / -math.Log(float64(c) / float64(all))
 	anpmi    := math.Abs(npmi)
@@ -428,6 +429,7 @@ func (e *Engine) item_item(i int, j int, partition int) (out [2]record) {
 				case "dice"      : columns[k] = fmt.Sprintf(ffmt, dice)
 				case "overlap"   : columns[k] = fmt.Sprintf(ffmt, overlap)
 				case "lift"      : columns[k] = fmt.Sprintf(ffmt, lift)
+				case "ilift"     : columns[k] = fmt.Sprintf(ffmt, ilift)
 				case "pmi"       : columns[k] = fmt.Sprintf(ffmt, pmi)
 				case "npmi"      : columns[k] = fmt.Sprintf(ffmt, npmi)
 				case "anpmi"     : columns[k] = fmt.Sprintf(ffmt, anpmi)

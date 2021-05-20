@@ -126,6 +126,7 @@ i4	i5	0.0550
 |   **jaccard** | Jaccard index                                            |
 |   **overlap** | overlap                                                  |
 |      **lift** | lift                                                     |
+|     **ilift** | inverse lift                                             |
 |       **pmi** | PMI - Pointwise Mutual Information                       |
 |      **npmi** | NPMI - Normalized Pointwise Mutual Information           |
 |     **anpmi** | absolute NPMI                                            |
