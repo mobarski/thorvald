@@ -97,7 +97,7 @@ i4	i5	0.0550
 |        **k** | KMV sketch capacity, 0 for not using sketches (default: 0)                               |
 |       **ih** | input has header                                                                         |
 |       **oh** | include header in output                                                                 |
-|     **topn** | output only top N results, 0 for all results, negative for bottom N results (default: 0) |
+|      **top** | output only top N results, 0 for all results, negative for bottom N results (default: 0) |
 |   **topcol** | output column number for top N selection (1-based) (default: 3)                          |
 |      **buf** | line buffer capacity in MB (default: 100)                                                |
 |     **coli** | column number of item id (1-based) (default: 1)                                          |
@@ -128,7 +128,6 @@ i4	i5	0.0550
 |      **lift** | lift                                                     |
 |       **pmi** | PMI - Pointwise Mutual Information                       |
 |      **npmi** | NPMI - Normalized Pointwise Mutual Information           |
-|     **anpmi** | absolute NPMI                                            |
 |        **wa** | IDF weighted features of A                               |
 |        **wa** | IDF weighted features of B                               |
 |        **wc** | IDF weighted common features of A and B                  |

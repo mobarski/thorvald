@@ -574,7 +574,7 @@ func (cfg *Cfg) parse_args() {
 	flag.IntVar(&cfg.c_min,        "cmin",   1, "minimum number of common features to show in output")
 	flag.IntVar(&cfg.workers,      "w",      1, "number of workers")
 	flag.IntVar(&cfg.sketch_cap,   "k",      0, "KMV sketch capacity, zero for no KMV usage")
-	flag.IntVar(&cfg.top_n,        "topn",   0, "output only top N results, 0 for all results, negative for bottom N results")
+	flag.IntVar(&cfg.top_n,        "top",    0, "output only top N results, 0 for all results, negative for bottom N results")
 	flag.IntVar(&cfg.top_col,      "topcol", 3, "1-based output column number for top N selection")
 	
 	flag.Usage = func() {
