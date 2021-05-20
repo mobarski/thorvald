@@ -367,7 +367,6 @@ func (e *Engine) item_item(i int, j int, partition int) (out [2]record) {
 	lift     := float64(c) / float64(a*b) * float64(all)
 	pmi      := math.Log(lift)
 	npmi     := pmi / -math.Log(float64(c) / float64(all))
-	anpmi    := math.Abs(npmi)
 	wdice    := 0.0
 	wcos     := 0.0
 	woverlap := 0.0
@@ -430,7 +429,6 @@ func (e *Engine) item_item(i int, j int, partition int) (out [2]record) {
 				case "lift"      : columns[k] = fmt.Sprintf(ffmt, lift)
 				case "pmi"       : columns[k] = fmt.Sprintf(ffmt, pmi)
 				case "npmi"      : columns[k] = fmt.Sprintf(ffmt, npmi)
-				case "anpmi"     : columns[k] = fmt.Sprintf(ffmt, anpmi)
 				case "logdice"   : columns[k] = fmt.Sprintf(ffmt, logdice)
 				case "wdice"     : columns[k] = fmt.Sprintf(ffmt, wdice)
 				case "wjaccard"  : columns[k] = fmt.Sprintf(ffmt, wjaccard)
