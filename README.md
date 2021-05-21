@@ -19,6 +19,16 @@ TODO
 - easy deployment: single, statically-linked executable
 - [unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy)
 
+
+## Installation
+
+```
+git clone https://github.com/mobarski/thorvald
+cd thorvald/src
+go build thorvald.go
+```
+
+
 ## Simple example
 
 ### Input file
@@ -83,14 +93,6 @@ i2	i5	0.4462
 i3	i4	0.0550
 i3	i5	1.0000
 i4	i5	0.0550
-```
-
-## Installation
-
-```
-git clone https://github.com/mobarski/thorvald
-cd thorvald/src
-go build thorvald.go
 ```
 
 # CLI options
