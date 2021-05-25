@@ -137,21 +137,22 @@ func other_triangle_format(fmt []string) []string {
 
 
 type Cfg struct {
-	input_path  string
-	output_path string
-	buf_cap     int
-	sketch_cap  int
-	item_col    int
-	top_n       int
-	top_col     int
-	features_col   int
-	output_fmt  string
-	workers     int
-	c_min       int
-	header_in   bool
-	header_out  bool
-	diagonal    bool
-	full        bool
+	input_path    string
+	output_path   string
+	inactive_path string
+	buf_cap       int
+	sketch_cap    int
+	item_col      int
+	top_n         int
+	top_col       int
+	features_col  int
+	output_fmt    string
+	workers       int
+	c_min         int
+	header_in     bool
+	header_out    bool
+	diagonal      bool
+	full          bool
 }
 
 
@@ -161,6 +162,7 @@ type Engine struct {
 	cfg              Cfg
 	features_by_item map[string]map[uint32]bool
 	range_by_item    map[string]int
+	inactive         map[string]bool
 	all_features     map[uint32]bool
 	feature_freq     map[uint32]int
 	feature_idf      map[uint32]float64
@@ -178,6 +180,22 @@ type Engine struct {
 	output           *log.Logger // handles concurrent writes
 }
 
+func (e *Engine) load_inactive() {
+	if len(e.cfg.inactive_path)==0 { return }
+	file, err := os.Open(e.cfg.inactive_path)
+	check(err)
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	
+	pg := Progress(0,"INACTIVE","items")
+	for scanner.Scan() {
+		id := scanner.Text()
+		e.inactive[id] = true
+		pg.Add(1)
+	}
+	file.Close()
+	pg.Close()
+}
 
 func (e *Engine) load() {
 	// --- SET / KMV SKETCH CONSTRUCTION --------------------------------------
@@ -307,7 +325,8 @@ func (e *Engine) calc_idf() {
 
 // TODO: String()
 type record struct {
-	val	float32
+	val	float32 // required for top N sorting
+	idb string  // required for inactive items detection
 	str	string
 }
 
@@ -451,6 +470,7 @@ func (e *Engine) item_item(i int, j int, partition int) (out [2]record) {
 			out[r].val = float32(val)
 		}
 		out[r].str = strings.Join(columns, "\t")
+		out[r].idb = mj
 	}
 	return out
 }
@@ -478,11 +498,13 @@ func (e *Engine) calc_similarity() {
 			records := make([]record, 2*e.items_cnt)
 			for j:=j0; j<e.items_cnt; j++ {
 				rec := e.item_item(i,j,i0)
-				if rec[0].str!="" {
+				if rec[0].str!="" && !e.inactive[rec[0].idb] {
+					// omit record if b is inactive (e.inactive[idb] is false)
 					records[r] = rec[0]
 					r++
 				}
-				if rec[1].str!="" {
+				if rec[1].str!="" && !e.inactive[rec[1].idb] {
+					// TODO: omit record if b is inactive (e.inactive[idb] is false)
 					records[r] = rec[1]
 					r++
 				}
@@ -530,6 +552,7 @@ func (e *Engine) main() {
 	e.range_by_item = make(map[string]int)
 	e.all_features = make(map[uint32]bool)
 	e.feature_freq = make(map[uint32]int)
+	e.inactive = make(map[string]bool)
 	
 	// open output
 	filename := e.cfg.output_path
@@ -549,6 +572,7 @@ func (e *Engine) main() {
 	}
 
 	// core
+	e.load_inactive()
 	e.load()
 	e.calc_idf()
 	e.calc_similarity()
@@ -558,9 +582,10 @@ func (e *Engine) main() {
 
 
 func (cfg *Cfg) parse_args() {
-	flag.StringVar(&cfg.input_path,  "i",   "", "input path")
-	flag.StringVar(&cfg.output_path, "o",   "", "output path")
-	flag.StringVar(&cfg.output_fmt,  "f",   "ida,idb,cos", "output format")
+	flag.StringVar(&cfg.input_path,     "i",          "", "input path")
+	flag.StringVar(&cfg.output_path,    "o",          "", "output path")
+	flag.StringVar(&cfg.inactive_path,  "iinactive",  "", "inactive items input path")
+	flag.StringVar(&cfg.output_fmt,     "f",          "ida,idb,cos", "output format")
 	
 	flag.BoolVar(&cfg.header_in,   "ih", false, "input header")
 	flag.BoolVar(&cfg.header_out,  "oh", false, "output header")

@@ -16,6 +16,7 @@ TODO
 - parallel processing
 - KMV sketch-based acceleration
 - ability to limit output to top N items
+- asymetrical metrics for inactive items
 - easy deployment: single, statically-linked executable
 - [unix philosophy](https://en.wikipedia.org/wiki/Unix_philosophy)
 
@@ -97,23 +98,24 @@ i4	i5	0.0550
 
 # CLI options
 
-|       option | info                                                             |
-| -----------: | ---------------------------------------------------------------- | 
-|        **i** | input path                                                       |
-|        **o** | output path (default: stdout)                                    |
-|        **f** | output format, (default: ida,idb,cos)                            |
-|        **w** | number of workers (default: 1)                                   |
-|        **k** | KMV sketch capacity, 0 for not using sketches (default: 0)       |
-|       **ih** | input has header                                                 |
-|       **oh** | include header in output                                         |
-|      **top** | output only top N results, 0 for all results (default: 0)        |
-|   **topcol** | output column number for top N selection (1-based) (default: 3)  |
-|      **buf** | line buffer capacity in MB (default: 100)                        |
-|     **coli** | column number of item id (1-based) (default: 1)                  |
-|     **colf** | column number of features (1-based) (default: 2)                 |
-|     **cmin** | minimum number of common features to show in output (default: 1) |
-|     **diag** | include diagonal in the output                                   |
-|     **full** | include upper and lower triangle in the output                   |
+|        option | info                                                             |
+| ------------: | ---------------------------------------------------------------- | 
+|         **i** | input path                                                       |
+|         **o** | output path (default: stdout)                                    |
+|         **f** | output format, (default: ida,idb,cos)                            |
+| **iinactive** | inactive items input path (no header!)                           |
+|         **w** | number of workers (default: 1)                                   |
+|         **k** | KMV sketch capacity, 0 for not using sketches (default: 0)       |
+|        **ih** | input has header                                                 |
+|        **oh** | include header in output                                         |
+|       **top** | output only top N results, 0 for all results (default: 0)        |
+|    **topcol** | output column number for top N selection (1-based) (default: 3)  |
+|       **buf** | line buffer capacity in MB (default: 100)                        |
+|      **coli** | column number of item id (1-based) (default: 1)                  |
+|      **colf** | column number of features (1-based) (default: 2)                 |
+|      **cmin** | minimum number of common features to show in output (default: 1) |
+|      **diag** | include diagonal in the output                                   |
+|      **full** | include upper and lower triangle in the output                   |
 
 ## Output format
 
